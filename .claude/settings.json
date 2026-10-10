@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(.\\dev.ps1 *)",
+      "PowerShell(./dev.ps1 *)",
+      "Bash(powershell.exe -NoProfile -ExecutionPolicy Bypass -File dev.ps1 *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "Read(android/**)",
+      "Read(docs/**)",
+      "Read(benchmark/**)",
+      "Read(voice/**)"
+    ]
+  }
+}

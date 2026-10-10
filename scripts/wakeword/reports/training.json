@@ -1,0 +1,21 @@
+{
+  "architecture": "openWakeWord front-end (frozen) + MLP 1536 -> 128 -> 1",
+  "features": "app streaming: one mel call per 80 ms chunk, 16 embeddings",
+  "seed": 2207,
+  "epochs": 12,
+  "real_repeats": 3,
+  "positive_steps": 31565,
+  "negative_steps": 430669,
+  "mined_per_round": [
+    412,
+    413
+  ],
+  "positive_scenes": 3864,
+  "negative_scenes": 5774,
+  "real_train_positives": 36,
+  "synthetic_train_positives": 168,
+  "train_sentences": 2874,
+  "train_talk_hours": 13.2,
+  "minutes": 14.4,
+  "license": "CC BY-NC-SA 4.0 (trained on openWakeWord features)"
+}

@@ -1,0 +1,497 @@
+{
+ "split": "calibration",
+ "levels": {
+  "high": {
+   "threshold": 0.95,
+   "target_per_hour": 2.0,
+   "tts": {
+    "hits": 1223,
+    "of": 1680
+   },
+   "real": {
+    "hits": 0,
+    "of": 0
+   },
+   "groups": {
+    "sentence_with_dina": {
+     "hits": 22,
+     "of": 38,
+     "recall": 0.5789
+    },
+    "tts/babble": {
+     "hits": 83,
+     "of": 120,
+     "recall": 0.6917
+    },
+    "tts/distance_1": {
+     "hits": 94,
+     "of": 120,
+     "recall": 0.7833
+    },
+    "tts/distance_3": {
+     "hits": 93,
+     "of": 120,
+     "recall": 0.775
+    },
+    "tts/distance_5": {
+     "hits": 98,
+     "of": 120,
+     "recall": 0.8167
+    },
+    "tts/fast": {
+     "hits": 87,
+     "of": 120,
+     "recall": 0.725
+    },
+    "tts/household": {
+     "hits": 88,
+     "of": 120,
+     "recall": 0.7333
+    },
+    "tts/normal": {
+     "hits": 82,
+     "of": 120,
+     "recall": 0.6833
+    },
+    "tts/pitch": {
+     "hits": 91,
+     "of": 120,
+     "recall": 0.7583
+    },
+    "tts/question": {
+     "hits": 90,
+     "of": 120,
+     "recall": 0.75
+    },
+    "tts/quiet": {
+     "hits": 95,
+     "of": 120,
+     "recall": 0.7917
+    },
+    "tts/shout": {
+     "hits": 82,
+     "of": 120,
+     "recall": 0.6833
+    },
+    "tts/slow": {
+     "hits": 93,
+     "of": 120,
+     "recall": 0.775
+    },
+    "tts/tired": {
+     "hits": 88,
+     "of": 120,
+     "recall": 0.7333
+    },
+    "tts/whisper_simulated": {
+     "hits": 59,
+     "of": 120,
+     "recall": 0.4917
+    }
+   },
+   "false": {
+    "conversation": {
+     "activations": 13,
+     "hours": 6.718,
+     "per_hour": 1.93
+    },
+    "similar_and_phrases": {
+     "activations": 97,
+     "hours": 2.169,
+     "per_hour": 44.72
+    }
+   }
+  },
+  "normal": {
+   "threshold": 0.998,
+   "target_per_hour": 0.7,
+   "tts": {
+    "hits": 846,
+    "of": 1680
+   },
+   "real": {
+    "hits": 0,
+    "of": 0
+   },
+   "groups": {
+    "sentence_with_dina": {
+     "hits": 5,
+     "of": 38,
+     "recall": 0.1316
+    },
+    "tts/babble": {
+     "hits": 70,
+     "of": 120,
+     "recall": 0.5833
+    },
+    "tts/distance_1": {
+     "hits": 76,
+     "of": 120,
+     "recall": 0.6333
+    },
+    "tts/distance_3": {
+     "hits": 74,
+     "of": 120,
+     "recall": 0.6167
+    },
+    "tts/distance_5": {
+     "hits": 69,
+     "of": 120,
+     "recall": 0.575
+    },
+    "tts/fast": {
+     "hits": 43,
+     "of": 120,
+     "recall": 0.3583
+    },
+    "tts/household": {
+     "hits": 67,
+     "of": 120,
+     "recall": 0.5583
+    },
+    "tts/normal": {
+     "hits": 76,
+     "of": 120,
+     "recall": 0.6333
+    },
+    "tts/pitch": {
+     "hits": 53,
+     "of": 120,
+     "recall": 0.4417
+    },
+    "tts/question": {
+     "hits": 76,
+     "of": 120,
+     "recall": 0.6333
+    },
+    "tts/quiet": {
+     "hits": 76,
+     "of": 120,
+     "recall": 0.6333
+    },
+    "tts/shout": {
+     "hits": 73,
+     "of": 120,
+     "recall": 0.6083
+    },
+    "tts/slow": {
+     "hits": 47,
+     "of": 120,
+     "recall": 0.3917
+    },
+    "tts/tired": {
+     "hits": 37,
+     "of": 120,
+     "recall": 0.3083
+    },
+    "tts/whisper_simulated": {
+     "hits": 9,
+     "of": 120,
+     "recall": 0.075
+    }
+   },
+   "false": {
+    "conversation": {
+     "activations": 2,
+     "hours": 6.718,
+     "per_hour": 0.3
+    },
+    "similar_and_phrases": {
+     "activations": 23,
+     "hours": 2.169,
+     "per_hour": 10.6
+    }
+   }
+  },
+  "low": {
+   "threshold": 0.999,
+   "target_per_hour": 0.2,
+   "tts": {
+    "hits": 767,
+    "of": 1680
+   },
+   "real": {
+    "hits": 0,
+    "of": 0
+   },
+   "groups": {
+    "sentence_with_dina": {
+     "hits": 1,
+     "of": 38,
+     "recall": 0.0263
+    },
+    "tts/babble": {
+     "hits": 65,
+     "of": 120,
+     "recall": 0.5417
+    },
+    "tts/distance_1": {
+     "hits": 75,
+     "of": 120,
+     "recall": 0.625
+    },
+    "tts/distance_3": {
+     "hits": 68,
+     "of": 120,
+     "recall": 0.5667
+    },
+    "tts/distance_5": {
+     "hits": 63,
+     "of": 120,
+     "recall": 0.525
+    },
+    "tts/fast": {
+     "hits": 32,
+     "of": 120,
+     "recall": 0.2667
+    },
+    "tts/household": {
+     "hits": 64,
+     "of": 120,
+     "recall": 0.5333
+    },
+    "tts/normal": {
+     "hits": 75,
+     "of": 120,
+     "recall": 0.625
+    },
+    "tts/pitch": {
+     "hits": 43,
+     "of": 120,
+     "recall": 0.3583
+    },
+    "tts/question": {
+     "hits": 72,
+     "of": 120,
+     "recall": 0.6
+    },
+    "tts/quiet": {
+     "hits": 74,
+     "of": 120,
+     "recall": 0.6167
+    },
+    "tts/shout": {
+     "hits": 70,
+     "of": 120,
+     "recall": 0.5833
+    },
+    "tts/slow": {
+     "hits": 35,
+     "of": 120,
+     "recall": 0.2917
+    },
+    "tts/tired": {
+     "hits": 27,
+     "of": 120,
+     "recall": 0.225
+    },
+    "tts/whisper_simulated": {
+     "hits": 4,
+     "of": 120,
+     "recall": 0.0333
+    }
+   },
+   "false": {
+    "conversation": {
+     "activations": 1,
+     "hours": 6.718,
+     "per_hour": 0.15
+    },
+    "similar_and_phrases": {
+     "activations": 14,
+     "hours": 2.169,
+     "per_hour": 6.45
+    }
+   }
+  }
+ },
+ "sweep": [
+  {
+   "threshold": 0.05,
+   "tts_recall": 0.9393,
+   "sentence_recall": 0.7105,
+   "conversation_per_hour": 41.68
+  },
+  {
+   "threshold": 0.1,
+   "tts_recall": 0.9226,
+   "sentence_recall": 0.7105,
+   "conversation_per_hour": 30.96
+  },
+  {
+   "threshold": 0.15,
+   "tts_recall": 0.9143,
+   "sentence_recall": 0.7105,
+   "conversation_per_hour": 26.2
+  },
+  {
+   "threshold": 0.2,
+   "tts_recall": 0.9042,
+   "sentence_recall": 0.6842,
+   "conversation_per_hour": 22.33
+  },
+  {
+   "threshold": 0.25,
+   "tts_recall": 0.8988,
+   "sentence_recall": 0.6842,
+   "conversation_per_hour": 19.95
+  },
+  {
+   "threshold": 0.3,
+   "tts_recall": 0.8935,
+   "sentence_recall": 0.6842,
+   "conversation_per_hour": 17.56
+  },
+  {
+   "threshold": 0.35,
+   "tts_recall": 0.8839,
+   "sentence_recall": 0.6842,
+   "conversation_per_hour": 16.37
+  },
+  {
+   "threshold": 0.4,
+   "tts_recall": 0.8762,
+   "sentence_recall": 0.6842,
+   "conversation_per_hour": 14.74
+  },
+  {
+   "threshold": 0.45,
+   "tts_recall": 0.869,
+   "sentence_recall": 0.6579,
+   "conversation_per_hour": 13.69
+  },
+  {
+   "threshold": 0.5,
+   "tts_recall": 0.8643,
+   "sentence_recall": 0.6579,
+   "conversation_per_hour": 13.1
+  },
+  {
+   "threshold": 0.55,
+   "tts_recall": 0.8571,
+   "sentence_recall": 0.6579,
+   "conversation_per_hour": 11.61
+  },
+  {
+   "threshold": 0.6,
+   "tts_recall": 0.8494,
+   "sentence_recall": 0.6579,
+   "conversation_per_hour": 9.82
+  },
+  {
+   "threshold": 0.65,
+   "tts_recall": 0.8411,
+   "sentence_recall": 0.6579,
+   "conversation_per_hour": 8.93
+  },
+  {
+   "threshold": 0.7,
+   "tts_recall": 0.8333,
+   "sentence_recall": 0.6316,
+   "conversation_per_hour": 7.44
+  },
+  {
+   "threshold": 0.75,
+   "tts_recall": 0.8214,
+   "sentence_recall": 0.6316,
+   "conversation_per_hour": 6.1
+  },
+  {
+   "threshold": 0.8,
+   "tts_recall": 0.8054,
+   "sentence_recall": 0.6316,
+   "conversation_per_hour": 5.66
+  },
+  {
+   "threshold": 0.85,
+   "tts_recall": 0.7917,
+   "sentence_recall": 0.6053,
+   "conversation_per_hour": 5.06
+  },
+  {
+   "threshold": 0.9,
+   "tts_recall": 0.7655,
+   "sentence_recall": 0.6053,
+   "conversation_per_hour": 3.72
+  },
+  {
+   "threshold": 0.91,
+   "tts_recall": 0.7589,
+   "sentence_recall": 0.6053,
+   "conversation_per_hour": 3.27
+  },
+  {
+   "threshold": 0.92,
+   "tts_recall": 0.7512,
+   "sentence_recall": 0.5789,
+   "conversation_per_hour": 2.98
+  },
+  {
+   "threshold": 0.93,
+   "tts_recall": 0.7458,
+   "sentence_recall": 0.5789,
+   "conversation_per_hour": 2.83
+  },
+  {
+   "threshold": 0.94,
+   "tts_recall": 0.7363,
+   "sentence_recall": 0.5789,
+   "conversation_per_hour": 2.53
+  },
+  {
+   "threshold": 0.95,
+   "tts_recall": 0.728,
+   "sentence_recall": 0.5789,
+   "conversation_per_hour": 1.93
+  },
+  {
+   "threshold": 0.96,
+   "tts_recall": 0.7137,
+   "sentence_recall": 0.5789,
+   "conversation_per_hour": 1.49
+  },
+  {
+   "threshold": 0.97,
+   "tts_recall": 0.6917,
+   "sentence_recall": 0.5526,
+   "conversation_per_hour": 1.49
+  },
+  {
+   "threshold": 0.98,
+   "tts_recall": 0.6667,
+   "sentence_recall": 0.5,
+   "conversation_per_hour": 1.49
+  },
+  {
+   "threshold": 0.99,
+   "tts_recall": 0.6238,
+   "sentence_recall": 0.4737,
+   "conversation_per_hour": 1.19
+  },
+  {
+   "threshold": 0.995,
+   "tts_recall": 0.5792,
+   "sentence_recall": 0.3421,
+   "conversation_per_hour": 0.74
+  },
+  {
+   "threshold": 0.998,
+   "tts_recall": 0.5036,
+   "sentence_recall": 0.1316,
+   "conversation_per_hour": 0.3
+  },
+  {
+   "threshold": 0.999,
+   "tts_recall": 0.4565,
+   "sentence_recall": 0.0263,
+   "conversation_per_hour": 0.15
+  },
+  {
+   "threshold": 0.9995,
+   "tts_recall": 0.4101,
+   "sentence_recall": 0.0263,
+   "conversation_per_hour": 0.15
+  }
+ ],
+ "conversation_hours": 6.72
+}

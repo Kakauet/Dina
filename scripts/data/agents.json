@@ -1,0 +1,14 @@
+{
+  "_doc": "Helper agents that write the data (no APIs). models: family (writer, checker and judge of an item are of different families when possible), reasoning effort, and who launches it (codex: the user's Codex; claude: Claude Code subagents). write: share of scenarios per writer (a batch started with --writers keeps its own in writers.json). check: round-trip interpreters. judge: naturalness and reply judges (each item goes to one of another family than its writer and interpreter). per: items per in-NN.txt (fichas, situations, phrases, answers).",
+  "models": {
+    "luna-6": {"family": "luna", "effort": "xhigh", "runner": "codex"},
+    "sol-6.1": {"family": "sol", "effort": "medium", "runner": "codex"},
+    "sol-6": {"family": "sol", "effort": "medium", "runner": "codex"},
+    "claude-sonnet-5.5": {"family": "claude", "effort": "low", "runner": "claude"},
+    "claude-haiku-5.5": {"family": "claude", "effort": "medium", "runner": "claude"}
+  },
+  "write": {"luna-6": 0.6, "sol-6.1": 0.2, "sol-6": 0.2},
+  "check": ["luna-6", "sol-6.1", "sol-6"],
+  "judge": ["claude-sonnet-5.5", "luna-6", "sol-6.1", "sol-6"],
+  "per": {"gen": 20, "rt": 12, "judge": 80, "reply": 40}
+}

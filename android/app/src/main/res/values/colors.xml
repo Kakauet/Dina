@@ -1,0 +1,4 @@
+<resources>
+    <!-- Window color before Compose draws; the real palette lives in ui/theme/Theme.kt. -->
+    <color name="dina_background">#FBF7EE</color>
+</resources>

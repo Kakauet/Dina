@@ -1,0 +1,6 @@
+<resources>
+    <string name="notification_channel_name">Dina escuchando</string>
+    <string name="notification_channel_description">Aviso fijo mientras Dina espera la palabra «Dina».</string>
+    <string name="alert_channel_name">Alarmas y temporizadores</string>
+    <string name="alert_channel_description">Avisos de las alarmas y temporizadores que pones con Dina.</string>
+</resources>

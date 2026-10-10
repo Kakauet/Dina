@@ -1,0 +1,15 @@
+# Text files are stored and checked out with LF, except Windows scripts.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+gradlew text eol=lf
+
+# Binaries
+*.jar binary
+*.png binary
+*.gif binary
+*.ttf binary
+*.onnx binary
+*.ort binary
+*.gguf binary

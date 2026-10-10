@@ -1,0 +1,46 @@
+{
+  "name": "Dina RealWorld 200",
+  "version": "realworld200_v1",
+  "schema_version": "1.0",
+  "created_at": "2026-09-02T10:07:44.920869+00:00",
+  "phase": "EVALUATE",
+  "frozen": true,
+  "episodes": 200,
+  "user_turns": 377,
+  "sha256": "0cab19d153d83f7c87d9959f262c670a3734f743cdfb0c72d3b5a89831c94e2e",
+  "files": {
+    "candidate_pool.jsonl": "2bb5b2db3bcfcefba1c6009fdfa1fd6376c90273a4a19ce99c39973940cef5a9",
+    "episodes/episodes_01.jsonl": "6783f925d2598423e93631546c157959e276d4d4a625064d2c3ffb79904a1392",
+    "episodes/episodes_02.jsonl": "02f250f15e95d4e1eb2aefb24606cc1e4563e6922b3a99be496031576962f35b",
+    "episodes/episodes_03.jsonl": "bf49823769378322e693c0d85ea4aa5649985f668ab928d9192874eba477f9e1",
+    "episodes/episodes_04.jsonl": "aa1b723397e02012079a372a8cc25a4b94e164388697ff794431408d81f19b7d",
+    "episodes/episodes_05.jsonl": "9a96904030b66daca5593d589cccdb2e5f8631a5ae130050f130a58dc68110b0",
+    "episodes/episodes_06.jsonl": "11d8cd4953d45865369596823171f4abb5fc9327d5851671fff43e779dddab84",
+    "episodes/episodes_07.jsonl": "9b810d532ab6f5e2f78a5a9b3bfefd7521b10b0ac28bebd0ab99644e984288f5",
+    "episodes/episodes_08.jsonl": "f2ae4b7228de842525466c7c556d7b7bc2c2462bf1d0195f3629335d7f02dfc0",
+    "episodes/episodes_09.jsonl": "8d26f7e5e23e5486da6503cd7ce2ff2a8e0c0bb66928da5f1ac80a90157369e1",
+    "episodes/episodes_10.jsonl": "4966f488a638258ab51265d7aeeb42848f73150f6c76da89d62efe8ef18c4174",
+    "README.md": "207a7f962061a5683a1447207b02e8ac31d56531ac32ff90647ea4a74c83e4ed",
+    "schema/episode.schema.json": "a47cf2cb8a3835508393b831e48f90b7f097747844fb0d59102e505b9629d154",
+    "selection.json": "07f0d0ddf3921d1bf1e558ca6160bfd84c79a8f6b34f4857622d6e3129a33f71"
+  },
+  "runtime_compatibility": [
+    "2",
+    "3",
+    "4",
+    "5"
+  ],
+  "generation_provenance": {
+    "pool": 600,
+    "selection_seed": 8421,
+    "models_used_during_build": [],
+    "mock_runtime_only": true
+  },
+  "executable_main_models": [
+    "dina_2_5_1p2b",
+    "dina_2_5_2p6b_qad",
+    "dina_2_5_350m",
+    "dina_3_1p2b",
+    "dina_2_350m"
+  ]
+}

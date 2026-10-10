@@ -1,0 +1,3 @@
+-keep class ai.moonshine.voice.** { *; }
+-keep class ai.onnxruntime.** { *; }
+-keep class com.kakauet.dina.llm.NativeLlmEngine { *; }

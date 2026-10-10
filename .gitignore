@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.venv-wakeword/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Local weights and data (see models/README.md and data/README.md)
+/models/*
+!/models/README.md
+/data/*
+!/data/README.md
+
+# Android
+android/.gradle/
+android/.kotlin/
+android/build/
+android/app/build/
+android/app/.cxx/
+android/local.properties
+android/model-assets/
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# Secrets
+*.local.json
+.env
+
+# Misc
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+.idea/
+.vscode/
+*.iml
+
+# Built APKs (.\dev.ps1 apk)
+dist/
+
+# UI renders (.\dev.ps1 screenshots)
+/screenshots/
+
+# Evaluation outputs (.\dev.ps1 eval); summaries go to docs/HISTORY.md
+/eval-results/
+
+# Dina-Real: phrases dictated by the user (blind test, private)
+/benchmark/dina_real/frases.tsv
+/benchmark/dina_real/dictado*.txt
+!/benchmark/dina_real/dictado.txt

@@ -1,0 +1,10 @@
+<resources>
+    <!-- Only the window before Compose draws; colors live in ui/theme/Theme.kt. -->
+    <style name="Theme.Dina" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/dina_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+</resources>

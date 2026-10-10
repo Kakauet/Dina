@@ -1,0 +1,108 @@
+{
+  "piper": [
+    {
+      "voice": "es_AR-daniela-high",
+      "license": [
+        "Attribution-ShareAlike 4.0 International"
+      ],
+      "dataset_urls": [
+        "https://www.openslr.org/61/"
+      ],
+      "base": "Trained by: https://huggingface.co/larcanio/piper-voices\nFinetuned from U.S. English lessac voice (high quality)."
+    },
+    {
+      "voice": "es_ES-carlfm-x_low",
+      "license": [
+        "Public domain"
+      ],
+      "dataset_urls": [
+        "https://github.com/carlfm01/my-speech-datasets"
+      ],
+      "base": "Trained from scratch."
+    },
+    {
+      "voice": "es_ES-davefx-medium",
+      "license": [
+        "CC0"
+      ],
+      "dataset_urls": [
+        "https://github.com/OHF-Voice/voice-datasets"
+      ],
+      "base": "Finetuned from U.S. English lessac voice (medium quality)."
+    },
+    {
+      "voice": "es_ES-mls_10246-low",
+      "license": [
+        "CC BY 4.0"
+      ],
+      "dataset_urls": [
+        "http://www.openslr.org/94/"
+      ],
+      "base": "Finetuned from U.S. English Ryan voice (low quality)."
+    },
+    {
+      "voice": "es_ES-mls_9972-low",
+      "license": [
+        "CC BY 4.0"
+      ],
+      "dataset_urls": [
+        "http://www.openslr.org/94/"
+      ],
+      "base": "Finetuned from U.S. English Ryan voice (low quality)."
+    },
+    {
+      "voice": "es_ES-sharvard-medium",
+      "license": [
+        "http://creativecommons.org/licenses/by/3.0/"
+      ],
+      "dataset_urls": [
+        "https://datashare.ed.ac.uk/handle/10283/574"
+      ],
+      "base": "Finetuned from U.S. English lessac voice (medium quality)."
+    },
+    {
+      "voice": "es_MX-ald-medium",
+      "license": [
+        "http://unlicense.org"
+      ],
+      "dataset_urls": [
+        "https://huggingface.co/datasets/rmcpantoja/Ald_Mexican_Spanish_speech_dataset"
+      ],
+      "base": "Finetuned from Spanish davefx voice (medium quality)."
+    },
+    {
+      "voice": "es_MX-ald-x_low",
+      "license": [],
+      "dataset_urls": [],
+      "base": "This model was trained from scratch using the synthetic dataset generated with the es_MX-ald-medium voice.\n\nThe goal of this model is to provide a smaller and faster alternative with fewer parameters."
+    },
+    {
+      "voice": "es_MX-claude-high",
+      "license": [
+        "apache-2.0"
+      ],
+      "dataset_urls": [
+        "https://huggingface.co/spaces/HirCoir/Piper-TTS-Spanish"
+      ],
+      "base": "See URL above"
+    }
+  ],
+  "supertonic": {
+    "repository": "Supertone/supertonic-3",
+    "revision": "724fb5abbf5502583fb520898d45929e62f02c0b",
+    "license": "BigScience OpenRAIL-M",
+    "styles": [
+      "F1",
+      "F2",
+      "F3",
+      "F4",
+      "F5",
+      "M1",
+      "M2",
+      "M3",
+      "M4",
+      "M5"
+    ]
+  },
+  "wake_head_license": "CC BY-NC-SA 4.0"
+}

@@ -1,0 +1,8 @@
+# Hidden from ripgrep-based searches (Claude Code, Codex, editors). Still in git.
+# llama.cpp is ~200 MB of vendored C++: never search it unless working on JNI.
+android/third_party/
+android/gradle/
+android/app/.cxx/
+# Long frozen data: read with offsets, never grep blindly.
+benchmark/realworld200/episodes/
+scripts/wakeword/reports/*.json

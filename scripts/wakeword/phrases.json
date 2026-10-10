@@ -1,0 +1,18 @@
+{
+  "positive": ["Dina", "¡Dina!", "¿Dina?", "Dina..."],
+  "negative": [
+    "Tina", "divina", "cocina", "Gina", "niña", "Diana", "dinero", "dinámica",
+    "vecina", "Argentina", "digna", "mina", "fina", "duna", "Dino", "dime", "dímelo",
+    "día", "vida", "mira", "gallina", "medicina", "oficina", "mandarina", "sardina",
+    "Tina vino ayer", "Gina está en la cocina", "La vecina está cocinando",
+    "Esta tarta está divina", "La niña mira a Diana", "Argentina ganó el partido",
+    "No tengo dinero", "Es una persona digna", "Dime la hora", "Buenos días",
+    "Pon un temporizador", "Sube el volumen", "Añade leche a la compra",
+    "La televisión está encendida", "Puedes cerrar la ventana",
+    "Mañana iremos al mercado y después prepararemos la comida",
+    "Las noticias hablan de economía deportes y cultura",
+    "Esta conversación continúa sin llamar a ningún asistente",
+    "En la cocina hay pan fruta vasos y platos sobre la mesa",
+    "Estamos hablando con normalidad mientras suena la radio"
+  ]
+}

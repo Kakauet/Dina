@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Dina RealWorld 200 episode",
+  "type": "object",
+  "required": [
+    "id",
+    "version",
+    "schema_version",
+    "category",
+    "secondary_categories",
+    "domain",
+    "operation",
+    "difficulty",
+    "number_of_turns",
+    "phenomena",
+    "expected_clarification",
+    "risk",
+    "clock_start",
+    "initial_state",
+    "turns",
+    "tool_outcomes",
+    "assertions",
+    "provenance",
+    "validation_status",
+    "intent",
+    "why"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^rw_[0-9]{4}$"
+    },
+    "version": {
+      "const": "realworld200_v1"
+    },
+    "schema_version": {
+      "const": "1.0"
+    },
+    "category": {
+      "enum": [
+        "everyday",
+        "direct",
+        "multiturn",
+        "corrections",
+        "references",
+        "ambiguity",
+        "interruptions",
+        "asr_like",
+        "hard"
+      ]
+    },
+    "difficulty": {
+      "enum": [
+        "easy",
+        "medium",
+        "hard"
+      ]
+    },
+    "turns": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4
+    },
+    "number_of_turns": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4
+    }
+  },
+  "additionalProperties": true
+}

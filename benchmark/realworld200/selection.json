@@ -1,0 +1,244 @@
+{
+  "phase": "BUILD_AND_FREEZE",
+  "seed": 8421,
+  "pool_size": 600,
+  "selected": 200,
+  "policy": "one deterministic surface per independently specified semantic trajectory; no model outputs",
+  "quality": {
+    "episodes": 200,
+    "turns": 377,
+    "categories": {
+      "everyday": 70,
+      "direct": 20,
+      "multiturn": 30,
+      "corrections": 20,
+      "references": 16,
+      "ambiguity": 14,
+      "interruptions": 10,
+      "asr_like": 10,
+      "hard": 10
+    },
+    "domains": {
+      "stopwatch": 28,
+      "datetime": 24,
+      "shopping": 30,
+      "alarm": 35,
+      "calculator": 25,
+      "volume": 27,
+      "timer": 31
+    },
+    "operations": {
+      "stopwatch.start": 19,
+      "datetime.now": 18,
+      "shopping.add": 21,
+      "alarm.create": 23,
+      "calculator.calculate": 25,
+      "volume.set": 27,
+      "timer.create": 21,
+      "datetime.weekday": 6,
+      "alarm.update": 3,
+      "timer.resume": 3,
+      "stopwatch.resume": 3,
+      "shopping.remove": 8,
+      "stopwatch.pause": 6,
+      "alarm.cancel": 7,
+      "timer.pause": 6,
+      "alarm.none": 1,
+      "alarm.capability": 1,
+      "shopping.clear": 1,
+      "timer.get": 1
+    },
+    "difficulty": {
+      "easy": 90,
+      "hard": 30,
+      "medium": 80
+    },
+    "phenomena": {
+      "everyday": 70,
+      "direct": 20,
+      "multiturn": 30,
+      "pending_action": 30,
+      "slot_filling": 30,
+      "corrections": 20,
+      "repair": 20,
+      "self_correction": 20,
+      "ordinal_reference": 16,
+      "references": 16,
+      "stateful_selection": 16,
+      "ambiguity": 14,
+      "clarification_required": 14,
+      "genuine_ambiguity": 14,
+      "missing_intent": 1,
+      "intent_switch": 10,
+      "interruptions": 10,
+      "resume_pending": 10,
+      "asr_like": 10,
+      "missing_punctuation": 10,
+      "speech_fragment": 10,
+      "hard": 10,
+      "negative_or_failure": 10,
+      "reported_request": 1,
+      "destructive_confirmation": 1,
+      "permission_denied": 1,
+      "tool_failure": 6,
+      "not_found": 1,
+      "recovery": 4,
+      "ambiguous": 1,
+      "invalid": 1,
+      "transient_failure": 1,
+      "empty_result": 1
+    },
+    "tool_failures": 6,
+    "exact_duplicates": [],
+    "structural_duplicates": [
+      [
+        "rw_0008",
+        "rw_0050"
+      ],
+      [
+        "rw_0015",
+        "rw_0057"
+      ],
+      [
+        "rw_0016",
+        "rw_0044"
+      ],
+      [
+        "rw_0071",
+        "rw_0085"
+      ],
+      [
+        "rw_0091",
+        "rw_0098",
+        "rw_0105",
+        "rw_0119"
+      ],
+      [
+        "rw_0092",
+        "rw_0113"
+      ],
+      [
+        "rw_0100",
+        "rw_0107",
+        "rw_0114"
+      ],
+      [
+        "rw_0101",
+        "rw_0108",
+        "rw_0115"
+      ],
+      [
+        "rw_0104",
+        "rw_0118"
+      ],
+      [
+        "rw_0106",
+        "rw_0120"
+      ],
+      [
+        "rw_0123",
+        "rw_0137"
+      ],
+      [
+        "rw_0124",
+        "rw_0131"
+      ],
+      [
+        "rw_0125",
+        "rw_0132"
+      ],
+      [
+        "rw_0128",
+        "rw_0135"
+      ],
+      [
+        "rw_0141",
+        "rw_0145"
+      ]
+    ],
+    "near_duplicates": [
+      {
+        "a": "rw_0025",
+        "b": "rw_0073",
+        "trigram_jaccard": 0.8235
+      },
+      {
+        "a": "rw_0039",
+        "b": "rw_0087",
+        "trigram_jaccard": 0.8
+      },
+      {
+        "a": "rw_0078",
+        "b": "rw_0126",
+        "trigram_jaccard": 0.8
+      }
+    ],
+    "frequent_initial_words": [
+      [
+        "a",
+        34
+      ],
+      [
+        "cuando",
+        26
+      ],
+      [
+        "una",
+        26
+      ],
+      [
+        "por",
+        26
+      ],
+      [
+        "oye",
+        25
+      ],
+      [
+        "que",
+        23
+      ],
+      [
+        "mira",
+        23
+      ],
+      [
+        "ahora",
+        22
+      ],
+      [
+        "y",
+        17
+      ],
+      [
+        "el",
+        16
+      ],
+      [
+        "dime",
+        11
+      ],
+      [
+        "dejalo",
+        8
+      ],
+      [
+        "pon",
+        8
+      ],
+      [
+        "la",
+        7
+      ],
+      [
+        "cuanto",
+        6
+      ]
+    ],
+    "turn_length_words": {
+      "min": 1,
+      "max": 19,
+      "mean": 6.42
+    }
+  }
+}

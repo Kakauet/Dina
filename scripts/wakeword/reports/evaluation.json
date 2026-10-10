@@ -1,0 +1,957 @@
+{
+ "split": "test",
+ "heads": {
+  "dina_wakeword": {
+   "high": {
+    "threshold": 0.95,
+    "tts": {
+     "hits": 1268,
+     "of": 1680
+    },
+    "real": {
+     "hits": 23,
+     "of": 24
+    },
+    "groups": {
+     "real/fast": {
+      "hits": 4,
+      "of": 4,
+      "recall": 1.0
+     },
+     "real/normal": {
+      "hits": 3,
+      "of": 4,
+      "recall": 0.75
+     },
+     "real/question": {
+      "hits": 4,
+      "of": 4,
+      "recall": 1.0
+     },
+     "real/shout": {
+      "hits": 4,
+      "of": 4,
+      "recall": 1.0
+     },
+     "real/slow": {
+      "hits": 4,
+      "of": 4,
+      "recall": 1.0
+     },
+     "real/whisper": {
+      "hits": 4,
+      "of": 4,
+      "recall": 1.0
+     },
+     "sentence_with_dina": {
+      "hits": 7,
+      "of": 30,
+      "recall": 0.2333
+     },
+     "tts/babble": {
+      "hits": 93,
+      "of": 120,
+      "recall": 0.775
+     },
+     "tts/distance_1": {
+      "hits": 94,
+      "of": 120,
+      "recall": 0.7833
+     },
+     "tts/distance_3": {
+      "hits": 93,
+      "of": 120,
+      "recall": 0.775
+     },
+     "tts/distance_5": {
+      "hits": 89,
+      "of": 120,
+      "recall": 0.7417
+     },
+     "tts/fast": {
+      "hits": 86,
+      "of": 120,
+      "recall": 0.7167
+     },
+     "tts/household": {
+      "hits": 91,
+      "of": 120,
+      "recall": 0.7583
+     },
+     "tts/normal": {
+      "hits": 89,
+      "of": 120,
+      "recall": 0.7417
+     },
+     "tts/pitch": {
+      "hits": 92,
+      "of": 120,
+      "recall": 0.7667
+     },
+     "tts/question": {
+      "hits": 96,
+      "of": 120,
+      "recall": 0.8
+     },
+     "tts/quiet": {
+      "hits": 95,
+      "of": 120,
+      "recall": 0.7917
+     },
+     "tts/shout": {
+      "hits": 92,
+      "of": 120,
+      "recall": 0.7667
+     },
+     "tts/slow": {
+      "hits": 95,
+      "of": 120,
+      "recall": 0.7917
+     },
+     "tts/tired": {
+      "hits": 93,
+      "of": 120,
+      "recall": 0.775
+     },
+     "tts/whisper_simulated": {
+      "hits": 70,
+      "of": 120,
+      "recall": 0.5833
+     }
+    },
+    "false": {
+     "conversation": {
+      "activations": 14,
+      "hours": 6.347,
+      "per_hour": 2.21
+     },
+     "real_similar": {
+      "activations": 1,
+      "hours": 0.007,
+      "per_hour": 150.0
+     },
+     "similar_and_phrases": {
+      "activations": 92,
+      "hours": 2.663,
+      "per_hour": 34.55
+     }
+    }
+   },
+   "normal": {
+    "threshold": 0.998,
+    "tts": {
+     "hits": 859,
+     "of": 1680
+    },
+    "real": {
+     "hits": 16,
+     "of": 24
+    },
+    "groups": {
+     "real/fast": {
+      "hits": 2,
+      "of": 4,
+      "recall": 0.5
+     },
+     "real/normal": {
+      "hits": 2,
+      "of": 4,
+      "recall": 0.5
+     },
+     "real/question": {
+      "hits": 4,
+      "of": 4,
+      "recall": 1.0
+     },
+     "real/shout": {
+      "hits": 2,
+      "of": 4,
+      "recall": 0.5
+     },
+     "real/slow": {
+      "hits": 3,
+      "of": 4,
+      "recall": 0.75
+     },
+     "real/whisper": {
+      "hits": 3,
+      "of": 4,
+      "recall": 0.75
+     },
+     "sentence_with_dina": {
+      "hits": 0,
+      "of": 30,
+      "recall": 0.0
+     },
+     "tts/babble": {
+      "hits": 68,
+      "of": 120,
+      "recall": 0.5667
+     },
+     "tts/distance_1": {
+      "hits": 77,
+      "of": 120,
+      "recall": 0.6417
+     },
+     "tts/distance_3": {
+      "hits": 78,
+      "of": 120,
+      "recall": 0.65
+     },
+     "tts/distance_5": {
+      "hits": 72,
+      "of": 120,
+      "recall": 0.6
+     },
+     "tts/fast": {
+      "hits": 36,
+      "of": 120,
+      "recall": 0.3
+     },
+     "tts/household": {
+      "hits": 70,
+      "of": 120,
+      "recall": 0.5833
+     },
+     "tts/normal": {
+      "hits": 79,
+      "of": 120,
+      "recall": 0.6583
+     },
+     "tts/pitch": {
+      "hits": 57,
+      "of": 120,
+      "recall": 0.475
+     },
+     "tts/question": {
+      "hits": 70,
+      "of": 120,
+      "recall": 0.5833
+     },
+     "tts/quiet": {
+      "hits": 79,
+      "of": 120,
+      "recall": 0.6583
+     },
+     "tts/shout": {
+      "hits": 72,
+      "of": 120,
+      "recall": 0.6
+     },
+     "tts/slow": {
+      "hits": 51,
+      "of": 120,
+      "recall": 0.425
+     },
+     "tts/tired": {
+      "hits": 42,
+      "of": 120,
+      "recall": 0.35
+     },
+     "tts/whisper_simulated": {
+      "hits": 8,
+      "of": 120,
+      "recall": 0.0667
+     }
+    },
+    "false": {
+     "conversation": {
+      "activations": 1,
+      "hours": 6.347,
+      "per_hour": 0.16
+     },
+     "real_similar": {
+      "activations": 0,
+      "hours": 0.007,
+      "per_hour": 0.0
+     },
+     "similar_and_phrases": {
+      "activations": 8,
+      "hours": 2.663,
+      "per_hour": 3.0
+     }
+    }
+   },
+   "low": {
+    "threshold": 0.999,
+    "tts": {
+     "hits": 765,
+     "of": 1680
+    },
+    "real": {
+     "hits": 13,
+     "of": 24
+    },
+    "groups": {
+     "real/fast": {
+      "hits": 1,
+      "of": 4,
+      "recall": 0.25
+     },
+     "real/normal": {
+      "hits": 1,
+      "of": 4,
+      "recall": 0.25
+     },
+     "real/question": {
+      "hits": 3,
+      "of": 4,
+      "recall": 0.75
+     },
+     "real/shout": {
+      "hits": 2,
+      "of": 4,
+      "recall": 0.5
+     },
+     "real/slow": {
+      "hits": 3,
+      "of": 4,
+      "recall": 0.75
+     },
+     "real/whisper": {
+      "hits": 3,
+      "of": 4,
+      "recall": 0.75
+     },
+     "sentence_with_dina": {
+      "hits": 0,
+      "of": 30,
+      "recall": 0.0
+     },
+     "tts/babble": {
+      "hits": 64,
+      "of": 120,
+      "recall": 0.5333
+     },
+     "tts/distance_1": {
+      "hits": 71,
+      "of": 120,
+      "recall": 0.5917
+     },
+     "tts/distance_3": {
+      "hits": 70,
+      "of": 120,
+      "recall": 0.5833
+     },
+     "tts/distance_5": {
+      "hits": 61,
+      "of": 120,
+      "recall": 0.5083
+     },
+     "tts/fast": {
+      "hits": 23,
+      "of": 120,
+      "recall": 0.1917
+     },
+     "tts/household": {
+      "hits": 66,
+      "of": 120,
+      "recall": 0.55
+     },
+     "tts/normal": {
+      "hits": 75,
+      "of": 120,
+      "recall": 0.625
+     },
+     "tts/pitch": {
+      "hits": 45,
+      "of": 120,
+      "recall": 0.375
+     },
+     "tts/question": {
+      "hits": 66,
+      "of": 120,
+      "recall": 0.55
+     },
+     "tts/quiet": {
+      "hits": 77,
+      "of": 120,
+      "recall": 0.6417
+     },
+     "tts/shout": {
+      "hits": 67,
+      "of": 120,
+      "recall": 0.5583
+     },
+     "tts/slow": {
+      "hits": 40,
+      "of": 120,
+      "recall": 0.3333
+     },
+     "tts/tired": {
+      "hits": 36,
+      "of": 120,
+      "recall": 0.3
+     },
+     "tts/whisper_simulated": {
+      "hits": 4,
+      "of": 120,
+      "recall": 0.0333
+     }
+    },
+    "false": {
+     "conversation": {
+      "activations": 1,
+      "hours": 6.347,
+      "per_hour": 0.16
+     },
+     "real_similar": {
+      "activations": 0,
+      "hours": 0.007,
+      "per_hour": 0.0
+     },
+     "similar_and_phrases": {
+      "activations": 3,
+      "hours": 2.663,
+      "per_hour": 1.13
+     }
+    }
+   }
+  },
+  "codex_head_streamed": {
+   "0.999": {
+    "threshold": 0.999,
+    "tts": {
+     "hits": 109,
+     "of": 1680
+    },
+    "real": {
+     "hits": 10,
+     "of": 24
+    },
+    "groups": {
+     "real/fast": {
+      "hits": 0,
+      "of": 4,
+      "recall": 0.0
+     },
+     "real/normal": {
+      "hits": 1,
+      "of": 4,
+      "recall": 0.25
+     },
+     "real/question": {
+      "hits": 2,
+      "of": 4,
+      "recall": 0.5
+     },
+     "real/shout": {
+      "hits": 3,
+      "of": 4,
+      "recall": 0.75
+     },
+     "real/slow": {
+      "hits": 3,
+      "of": 4,
+      "recall": 0.75
+     },
+     "real/whisper": {
+      "hits": 1,
+      "of": 4,
+      "recall": 0.25
+     },
+     "sentence_with_dina": {
+      "hits": 1,
+      "of": 30,
+      "recall": 0.0333
+     },
+     "tts/babble": {
+      "hits": 13,
+      "of": 120,
+      "recall": 0.1083
+     },
+     "tts/distance_1": {
+      "hits": 8,
+      "of": 120,
+      "recall": 0.0667
+     },
+     "tts/distance_3": {
+      "hits": 3,
+      "of": 120,
+      "recall": 0.025
+     },
+     "tts/distance_5": {
+      "hits": 2,
+      "of": 120,
+      "recall": 0.0167
+     },
+     "tts/fast": {
+      "hits": 3,
+      "of": 120,
+      "recall": 0.025
+     },
+     "tts/household": {
+      "hits": 16,
+      "of": 120,
+      "recall": 0.1333
+     },
+     "tts/normal": {
+      "hits": 9,
+      "of": 120,
+      "recall": 0.075
+     },
+     "tts/pitch": {
+      "hits": 11,
+      "of": 120,
+      "recall": 0.0917
+     },
+     "tts/question": {
+      "hits": 9,
+      "of": 120,
+      "recall": 0.075
+     },
+     "tts/quiet": {
+      "hits": 4,
+      "of": 120,
+      "recall": 0.0333
+     },
+     "tts/shout": {
+      "hits": 10,
+      "of": 120,
+      "recall": 0.0833
+     },
+     "tts/slow": {
+      "hits": 18,
+      "of": 120,
+      "recall": 0.15
+     },
+     "tts/tired": {
+      "hits": 3,
+      "of": 120,
+      "recall": 0.025
+     },
+     "tts/whisper_simulated": {
+      "hits": 0,
+      "of": 120,
+      "recall": 0.0
+     }
+    },
+    "false": {
+     "conversation": {
+      "activations": 24,
+      "hours": 6.347,
+      "per_hour": 3.78
+     },
+     "real_similar": {
+      "activations": 0,
+      "hours": 0.007,
+      "per_hour": 0.0
+     },
+     "similar_and_phrases": {
+      "activations": 27,
+      "hours": 2.663,
+      "per_hour": 10.14
+     }
+    }
+   },
+   "0.5": {
+    "threshold": 0.5,
+    "tts": {
+     "hits": 489,
+     "of": 1680
+    },
+    "real": {
+     "hits": 22,
+     "of": 24
+    },
+    "groups": {
+     "real/fast": {
+      "hits": 4,
+      "of": 4,
+      "recall": 1.0
+     },
+     "real/normal": {
+      "hits": 2,
+      "of": 4,
+      "recall": 0.5
+     },
+     "real/question": {
+      "hits": 4,
+      "of": 4,
+      "recall": 1.0
+     },
+     "real/shout": {
+      "hits": 4,
+      "of": 4,
+      "recall": 1.0
+     },
+     "real/slow": {
+      "hits": 4,
+      "of": 4,
+      "recall": 1.0
+     },
+     "real/whisper": {
+      "hits": 4,
+      "of": 4,
+      "recall": 1.0
+     },
+     "sentence_with_dina": {
+      "hits": 4,
+      "of": 30,
+      "recall": 0.1333
+     },
+     "tts/babble": {
+      "hits": 54,
+      "of": 120,
+      "recall": 0.45
+     },
+     "tts/distance_1": {
+      "hits": 37,
+      "of": 120,
+      "recall": 0.3083
+     },
+     "tts/distance_3": {
+      "hits": 14,
+      "of": 120,
+      "recall": 0.1167
+     },
+     "tts/distance_5": {
+      "hits": 12,
+      "of": 120,
+      "recall": 0.1
+     },
+     "tts/fast": {
+      "hits": 23,
+      "of": 120,
+      "recall": 0.1917
+     },
+     "tts/household": {
+      "hits": 53,
+      "of": 120,
+      "recall": 0.4417
+     },
+     "tts/normal": {
+      "hits": 42,
+      "of": 120,
+      "recall": 0.35
+     },
+     "tts/pitch": {
+      "hits": 42,
+      "of": 120,
+      "recall": 0.35
+     },
+     "tts/question": {
+      "hits": 44,
+      "of": 120,
+      "recall": 0.3667
+     },
+     "tts/quiet": {
+      "hits": 20,
+      "of": 120,
+      "recall": 0.1667
+     },
+     "tts/shout": {
+      "hits": 44,
+      "of": 120,
+      "recall": 0.3667
+     },
+     "tts/slow": {
+      "hits": 54,
+      "of": 120,
+      "recall": 0.45
+     },
+     "tts/tired": {
+      "hits": 47,
+      "of": 120,
+      "recall": 0.3917
+     },
+     "tts/whisper_simulated": {
+      "hits": 3,
+      "of": 120,
+      "recall": 0.025
+     }
+    },
+    "false": {
+     "conversation": {
+      "activations": 116,
+      "hours": 6.347,
+      "per_hour": 18.28
+     },
+     "real_similar": {
+      "activations": 0,
+      "hours": 0.007,
+      "per_hour": 0.0
+     },
+     "similar_and_phrases": {
+      "activations": 180,
+      "hours": 2.663,
+      "per_hour": 67.6
+     }
+    }
+   }
+  },
+  "head_2.2.1_streamed": {
+   "0.999": {
+    "threshold": 0.999,
+    "tts": {
+     "hits": 953,
+     "of": 1680
+    },
+    "real": {
+     "hits": 8,
+     "of": 24
+    },
+    "groups": {
+     "real/fast": {
+      "hits": 2,
+      "of": 4,
+      "recall": 0.5
+     },
+     "real/normal": {
+      "hits": 0,
+      "of": 4,
+      "recall": 0.0
+     },
+     "real/question": {
+      "hits": 2,
+      "of": 4,
+      "recall": 0.5
+     },
+     "real/shout": {
+      "hits": 1,
+      "of": 4,
+      "recall": 0.25
+     },
+     "real/slow": {
+      "hits": 3,
+      "of": 4,
+      "recall": 0.75
+     },
+     "real/whisper": {
+      "hits": 0,
+      "of": 4,
+      "recall": 0.0
+     },
+     "sentence_with_dina": {
+      "hits": 16,
+      "of": 30,
+      "recall": 0.5333
+     },
+     "tts/babble": {
+      "hits": 77,
+      "of": 120,
+      "recall": 0.6417
+     },
+     "tts/distance_1": {
+      "hits": 92,
+      "of": 120,
+      "recall": 0.7667
+     },
+     "tts/distance_3": {
+      "hits": 82,
+      "of": 120,
+      "recall": 0.6833
+     },
+     "tts/distance_5": {
+      "hits": 69,
+      "of": 120,
+      "recall": 0.575
+     },
+     "tts/fast": {
+      "hits": 33,
+      "of": 120,
+      "recall": 0.275
+     },
+     "tts/household": {
+      "hits": 79,
+      "of": 120,
+      "recall": 0.6583
+     },
+     "tts/normal": {
+      "hits": 91,
+      "of": 120,
+      "recall": 0.7583
+     },
+     "tts/pitch": {
+      "hits": 64,
+      "of": 120,
+      "recall": 0.5333
+     },
+     "tts/question": {
+      "hits": 87,
+      "of": 120,
+      "recall": 0.725
+     },
+     "tts/quiet": {
+      "hits": 82,
+      "of": 120,
+      "recall": 0.6833
+     },
+     "tts/shout": {
+      "hits": 95,
+      "of": 120,
+      "recall": 0.7917
+     },
+     "tts/slow": {
+      "hits": 38,
+      "of": 120,
+      "recall": 0.3167
+     },
+     "tts/tired": {
+      "hits": 33,
+      "of": 120,
+      "recall": 0.275
+     },
+     "tts/whisper_simulated": {
+      "hits": 31,
+      "of": 120,
+      "recall": 0.2583
+     }
+    },
+    "false": {
+     "conversation": {
+      "activations": 1020,
+      "hours": 6.347,
+      "per_hour": 160.7
+     },
+     "real_similar": {
+      "activations": 0,
+      "hours": 0.007,
+      "per_hour": 0.0
+     },
+     "similar_and_phrases": {
+      "activations": 911,
+      "hours": 2.663,
+      "per_hour": 342.15
+     }
+    }
+   },
+   "0.5": {
+    "threshold": 0.5,
+    "tts": {
+     "hits": 1529,
+     "of": 1680
+    },
+    "real": {
+     "hits": 24,
+     "of": 24
+    },
+    "groups": {
+     "real/fast": {
+      "hits": 4,
+      "of": 4,
+      "recall": 1.0
+     },
+     "real/normal": {
+      "hits": 4,
+      "of": 4,
+      "recall": 1.0
+     },
+     "real/question": {
+      "hits": 4,
+      "of": 4,
+      "recall": 1.0
+     },
+     "real/shout": {
+      "hits": 4,
+      "of": 4,
+      "recall": 1.0
+     },
+     "real/slow": {
+      "hits": 4,
+      "of": 4,
+      "recall": 1.0
+     },
+     "real/whisper": {
+      "hits": 4,
+      "of": 4,
+      "recall": 1.0
+     },
+     "sentence_with_dina": {
+      "hits": 30,
+      "of": 30,
+      "recall": 1.0
+     },
+     "tts/babble": {
+      "hits": 114,
+      "of": 120,
+      "recall": 0.95
+     },
+     "tts/distance_1": {
+      "hits": 110,
+      "of": 120,
+      "recall": 0.9167
+     },
+     "tts/distance_3": {
+      "hits": 112,
+      "of": 120,
+      "recall": 0.9333
+     },
+     "tts/distance_5": {
+      "hits": 109,
+      "of": 120,
+      "recall": 0.9083
+     },
+     "tts/fast": {
+      "hits": 103,
+      "of": 120,
+      "recall": 0.8583
+     },
+     "tts/household": {
+      "hits": 103,
+      "of": 120,
+      "recall": 0.8583
+     },
+     "tts/normal": {
+      "hits": 111,
+      "of": 120,
+      "recall": 0.925
+     },
+     "tts/pitch": {
+      "hits": 111,
+      "of": 120,
+      "recall": 0.925
+     },
+     "tts/question": {
+      "hits": 110,
+      "of": 120,
+      "recall": 0.9167
+     },
+     "tts/quiet": {
+      "hits": 110,
+      "of": 120,
+      "recall": 0.9167
+     },
+     "tts/shout": {
+      "hits": 112,
+      "of": 120,
+      "recall": 0.9333
+     },
+     "tts/slow": {
+      "hits": 106,
+      "of": 120,
+      "recall": 0.8833
+     },
+     "tts/tired": {
+      "hits": 109,
+      "of": 120,
+      "recall": 0.9083
+     },
+     "tts/whisper_simulated": {
+      "hits": 109,
+      "of": 120,
+      "recall": 0.9083
+     }
+    },
+    "false": {
+     "conversation": {
+      "activations": 5671,
+      "hours": 6.347,
+      "per_hour": 893.45
+     },
+     "real_similar": {
+      "activations": 5,
+      "hours": 0.007,
+      "per_hour": 750.0
+     },
+     "similar_and_phrases": {
+      "activations": 4187,
+      "hours": 2.663,
+      "per_hour": 1572.55
+     }
+    }
+   }
+  }
+ },
+ "note": "codex_head_streamed / head_2.2.1_streamed: earlier heads run through the new streaming path; the real 2.2.1 app path is old_detector.json"
+}

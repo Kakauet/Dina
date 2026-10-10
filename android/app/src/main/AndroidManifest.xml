@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Moonshine's generic downloader declares these transitively; Dina only opens bundled local files. -->
+    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove" />
+
+    <uses-feature android:name="android.hardware.microphone" android:required="true" />
+
+    <application
+        android:name=".DinaApplication"
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Dina">
+
+        <!-- Not exported: only the launcher aliases below open it, so the icon always follows the chosen character. -->
+        <activity
+            android:name=".ui.MainActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false" />
+
+        <!-- One launcher entry per character; ui/LauncherIcon.kt enables the chosen one. -->
+        <activity-alias
+            android:name=".ui.LauncherBrote"
+            android:targetActivity=".ui.MainActivity"
+            android:icon="@mipmap/ic_launcher_brote"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".ui.LauncherMusgo"
+            android:targetActivity=".ui.MainActivity"
+            android:icon="@mipmap/ic_launcher_musgo"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <service
+            android:name=".voice.DinaService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
+
+        <receiver
+            android:name=".tools.ToolAlarmReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".tools.ToolBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

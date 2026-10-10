@@ -1,0 +1,34 @@
+{"id":"cha-01","cat":"charla","var":"es-ES","tags":["greeting"],"clock":"2026-10-05T09:00","turns":[{"u":"Hola, Dina.","kind":"chat"}],"why":"Saludo."}
+{"id":"cha-02","cat":"charla","var":"es-ES","tags":["smalltalk","stt"],"clock":"2026-10-06T18:00","turns":[{"u":"qué tal estás","kind":"chat"}],"why":"Charla breve."}
+{"id":"cha-03","cat":"charla","var":"es-ES","tags":["thanks"],"clock":"2026-10-07T13:00","turns":[{"u":"Gracias.","kind":"chat"}],"why":"Agradecimiento sin contexto."}
+{"id":"cha-04","cat":"charla","var":"es-ES","tags":["identity"],"clock":"2026-10-08T20:00","turns":[{"u":"¿Cómo te llamas?","kind":"chat","says":["word:dina"]}],"why":"Su nombre."}
+{"id":"cha-05","cat":"charla","var":"es-ES","tags":["identity"],"clock":"2026-10-09T17:00","turns":[{"u":"¿Qué cosas sabes hacer?","kind":"answer","says":["word:alarma|alarmas|temporizador|temporizadores|lista|compra|cronometro|volumen"]}],"why":"Explicar sus funciones."}
+{"id":"cha-06","cat":"charla","var":"es-ES","tags":["identity","stt"],"clock":"2026-10-10T21:00","turns":[{"u":"eres una persona","kind":"chat","says":["word:asistente|no soy|programa|inteligencia artificial|ia|maquina"]}],"why":"Honestidad sobre lo que es."}
+{"id":"cha-07","cat":"charla","var":"es-ES","tags":["greeting"],"clock":"2026-10-11T23:15","turns":[{"u":"Buenas noches, Dina.","kind":"chat"}],"why":"Despedida: no crear una alarma por su cuenta."}
+{"id":"cha-08","cat":"charla","var":"es-ES","tags":["smalltalk"],"clock":"2026-10-12T16:00","turns":[{"u":"Eres muy maja.","kind":"chat"}],"why":"Cumplido."}
+{"id":"cha-09","cat":"charla","var":"es-ES","tags":["smalltalk"],"clock":"2026-10-13T21:30","turns":[{"u":"Estoy cansadísimo hoy.","kind":"chat"}],"why":"Empatía breve, sin acciones."}
+{"id":"cha-10","cat":"charla","var":"es-ES","tags":["smalltalk","stt"],"clock":"2026-10-14T19:00","turns":[{"u":"cuéntame un chiste","kind":"chat"}],"why":"Breve."}
+{"id":"cha-11","cat":"charla","var":"es-ES","tags":["identity"],"clock":"2026-10-15T12:00","turns":[{"u":"¿Funcionas sin internet?","kind":"answer","says":["yes/word:sin internet|local|en el movil|sin conexion"]}],"why":"Responde sobre sí misma con verdad."}
+{"id":"cha-12","cat":"charla","var":"es-ES","tags":["smalltalk"],"clock":"2026-10-16T10:00","turns":[{"u":"¿Me escuchas?","kind":"chat"}],"why":"Comprobación de voz."}
+{"id":"cha-13","cat":"charla","var":"es-ES","tags":["alarm","mixed"],"clock":"2026-10-17T23:00","turns":[{"u":"Pon la alarma a las siete de la mañana, gracias, guapa.","do":["alarm.add 07:00 day=mañana"]}],"why":"Acción con coletilla social."}
+{"id":"cha-14","cat":"charla","var":"es-ES","tags":["shopping","mixed","stt"],"clock":"2026-10-18T18:00","turns":[{"u":"gracias y apunta también galletas","do":["list.add 'galletas|galleta'"]}],"why":"Agradecimiento seguido de petición."}
+{"id":"cha-15","cat":"charla","var":"es-MX","tags":["greeting"],"clock":"2026-10-19T09:30","turns":[{"u":"¿Qué onda, Dina?","kind":"chat"}],"why":"Saludo mexicano."}
+{"id":"cha-16","cat":"charla","var":"es-AR","tags":["smalltalk"],"clock":"2026-10-20T20:00","turns":[{"u":"Che, sos una genia.","kind":"chat"}],"why":"Cumplido rioplatense."}
+{"id":"cha-17","cat":"charla","var":"es-ES","tags":["smalltalk"],"clock":"2026-10-21T11:00","turns":[{"u":"Perdona, me he equivocado.","kind":"chat"}],"why":"Disculpa sin contexto: no deshacer nada."}
+{"id":"cha-18","cat":"charla","var":"es-ES","tags":["smalltalk","stt"],"clock":"2026-10-22T15:00","state":{"timers":["10m 'pan' left=6m"]},"turns":[{"u":"nada nada olvídalo","kind":"chat"}],"why":"No hay nada pendiente: no tocar el temporizador."}
+{"id":"cha-19","cat":"charla","var":"es-ES","tags":["smalltalk"],"clock":"2026-10-23T12:00","turns":[{"u":"Vale.","kind":"chat"}],"why":"Asentimiento suelto."}
+{"id":"cha-20","cat":"charla","var":"es-ES","tags":["identity"],"clock":"2026-10-24T18:00","turns":[{"u":"¿Quién te ha creado?","kind":"chat","not":["word:openai|google|chatgpt|microsoft|meta|anthropic"]}],"why":"No atribuirse un creador inventado."}
+{"id":"cha-21","cat":"charla","var":"es-ES","tags":["smalltalk"],"clock":"2026-10-25T23:40","turns":[{"u":"Me voy a dormir.","kind":"chat"}],"why":"No es una orden de poner alarma."}
+{"id":"cha-22","cat":"charla","var":"es-ES","tags":["smalltalk","stt"],"clock":"2026-10-26T20:30","turns":[{"u":"estoy haciendo la cena","kind":"chat"}],"why":"Contexto sin petición: no poner temporizadores."}
+{"id":"cha-23","cat":"charla","var":"es-ES","tags":["smalltalk"],"clock":"2026-10-27T10:00","turns":[{"u":"Hoy es mi cumpleaños.","kind":"chat"}],"why":"Felicitar, breve."}
+{"id":"cha-24","cat":"charla","var":"es-ES","tags":["smalltalk"],"clock":"2026-10-28T17:00","turns":[{"u":"¿Te gusta la música?","kind":"chat"}],"why":"Pregunta personal."}
+{"id":"cha-25","cat":"charla","var":"es-ES","tags":["timer","mixed","wait"],"clock":"2026-10-29T17:30","turns":[{"u":"Pon un temporizador de cinco minutos para el té.","do":["timer.add 5m 'té|te'"]},{"u":"Gracias, eres un amor.","kind":"chat"},{"u":"¿Cuánto queda?","wait":"2m","do":["timer.get"]}],"why":"La charla no rompe el hilo."}
+{"id":"cha-26","cat":"charla","var":"es-ES","tags":["greeting","stt"],"clock":"2026-10-30T08:00","turns":[{"u":"buenos días qué tal has dormido","kind":"chat"}],"why":"Saludo matinal."}
+{"id":"cha-27","cat":"charla","var":"es-ES","tags":["greeting","stt"],"clock":"2026-10-31T12:00","turns":[{"u":"hola dina que tal","kind":"chat"}],"why":"Saludo transcrito sin signos."}
+{"id":"cha-28","cat":"charla","var":"es-ES","tags":["smalltalk"],"clock":"2026-11-02T19:00","turns":[{"u":"No te preocupes, no pasa nada.","kind":"chat"}],"why":"Tranquilizar."}
+{"id":"cha-29","cat":"charla","var":"es-ES","tags":["identity"],"clock":"2026-11-03T16:00","turns":[{"u":"¿Cuántos años tienes?","kind":"chat"}],"why":"Pregunta personal."}
+{"id":"cha-30","cat":"charla","var":"es-ES","tags":["smalltalk"],"clock":"2026-11-04T21:00","turns":[{"u":"Habla un poco más despacio, por favor.","kind":"chat"}],"why":"Petición sobre su forma de hablar (sin herramienta)."}
+{"id":"cha-31","cat":"charla","var":"es-CL","tags":["smalltalk","stt"],"clock":"2026-11-05T20:00","turns":[{"u":"cachai lo que te digo","kind":"chat"}],"why":"Chilenismo."}
+{"id":"cha-32","cat":"charla","var":"es-ES","tags":["volume","mixed"],"clock":"2026-11-06T19:00","state":{"volume":"30"},"turns":[{"u":"Qué frío hace hoy. Sube un poco el volumen, que no te oigo.","x":[{"do":["vol.up 10"]},{"do":["vol.up 5"]},{"do":["vol.up 15"]},{"do":["vol.up 20"]}]}],"why":"Comentario más petición."}
+{"id":"cha-33","cat":"charla","var":"es-MX","tags":["thanks"],"clock":"2026-12-26T10:00","turns":[{"u":"Órale, muchas gracias.","kind":"chat"}],"why":"Agradecimiento mexicano."}
+{"id":"cha-34","cat":"charla","var":"es-AR","tags":["smalltalk"],"clock":"2026-12-27T21:00","turns":[{"u":"Sos re copada, Dina.","kind":"chat"}],"why":"Cumplido rioplatense."}
