@@ -32,6 +32,29 @@ data class DinaMessage(
     val widget: ContextualWidget? = null,
 )
 
+/**
+ * Steps of loading the models, in order, with roughly how much of the wait each one takes on the
+ * phone. Steps that do not apply (Moonshine when off) are skipped, so progress only moves forward.
+ */
+enum class LoadStage(private val weight: Float) {
+    STORAGE(0.03f),
+    COPY(0.22f),
+    BRAIN(0.45f),
+    EAR(0.08f),
+    VOICE(0.17f),
+    WAKE(0.05f);
+
+    /** Overall progress 0..1 with this step [within] (0..1) done. */
+    fun progress(within: Float = 0f): Float {
+        val before = entries.take(ordinal).sumOf { it.weight.toDouble() }.toFloat()
+        return ((before + weight * within.coerceIn(0f, 1f)) / TOTAL).coerceIn(0f, 1f)
+    }
+
+    private companion object {
+        val TOTAL = entries.sumOf { it.weight.toDouble() }.toFloat()
+    }
+}
+
 /** What Dina is doing right now. Changes a few times per turn. */
 data class SessionState(
     val state: VoiceState = VoiceState.LOADING,
@@ -41,6 +64,8 @@ data class SessionState(
     val response: String = "",
     val widget: ContextualWidget? = null,
     val debugError: String = "",
+    /** How far model loading is (0..1); only meaningful while [state] is LOADING. */
+    val loadProgress: Float = 0f,
 )
 
 data class PerformanceMetrics(
@@ -136,6 +161,17 @@ class DinaStore {
     fun updateSession(transform: (SessionState) -> SessionState) = mutableSession.update(transform)
 
     fun setState(state: VoiceState, detail: String = state.label) = mutableSession.update { it.copy(state = state, detail = detail) }
+
+    /** Loading [stage] with [within] of it done; progress never goes back while loading. */
+    fun setLoading(stage: LoadStage, detail: String, within: Float = 0f) = mutableSession.update {
+        val progress = stage.progress(within)
+        it.copy(
+            state = VoiceState.LOADING,
+            detail = detail,
+            ready = false,
+            loadProgress = if (stage == LoadStage.STORAGE && within == 0f) progress else maxOf(it.loadProgress, progress),
+        )
+    }
 
     @Synchronized
     fun appendMessage(role: MessageRole, text: String, widget: ContextualWidget? = null) {

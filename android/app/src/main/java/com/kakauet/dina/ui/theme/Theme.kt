@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kakauet.dina.R
@@ -83,8 +84,10 @@ data class DinaPalette(
     val halo: Color,
     val ink: Color,
     val inkMuted: Color,
-    /** Hand-drawn outlines of cards and controls. */
+    /** Hand-drawn outlines of cards. */
     val line: Color,
+    /** Outlines that alone tell a control apart (fields, switches off, slider track): 3:1 on the page. */
+    val lineStrong: Color,
     /** Off-register block under cards (risograph look). */
     val shadow: Color,
     val accent: Color,
@@ -118,6 +121,7 @@ val LightMeadow = DinaPalette(
     ink = Color(0xFF1D3628),
     inkMuted = Color(0xFF4A6152),
     line = Color(0xFF9BBDA2),
+    lineStrong = Color(0xFF6F8F78),
     shadow = Color(0xFFCFE2CA),
     accent = Color(0xFF2E6A48),
     onAccent = Color(0xFFFFFFFF),
@@ -141,10 +145,11 @@ val NightMeadow = DinaPalette(
     surface = Color(0xFF1A2620),
     surfaceAlt = Color(0xFF22322A),
     surfaceSunken = Color(0xFF0D1511),
-    halo = Color(0xFF557F63),
+    halo = Color(0xFF3B5C48),
     ink = Color(0xFFE8F2E6),
     inkMuted = Color(0xFFA7BBAC),
     line = Color(0xFF3F5C49),
+    lineStrong = Color(0xFF6E8C77),
     shadow = Color(0xFF0A110D),
     accent = Color(0xFF9DD8AE),
     onAccent = Color(0xFF0F2519),
@@ -190,10 +195,15 @@ data class DinaType(
     val caption: TextStyle = TextStyle(fontFamily = Nunito, fontWeight = FontWeight.SemiBold, fontSize = 13.5.sp, lineHeight = 19.sp),
     val overline: TextStyle = TextStyle(fontFamily = Nunito, fontWeight = FontWeight.ExtraBold, fontSize = 11.5.sp, lineHeight = 15.sp, letterSpacing = 1.1.sp),
     val mono: TextStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 12.5.sp, lineHeight = 18.sp),
+    /** How far one-line text may shrink to fit (labels; big numbers; the header overline). */
+    val fitMin: TextUnit = 11.sp,
+    val numberMin: TextUnit = 22.sp,
+    val overlineMin: TextUnit = 8.sp,
 )
 
 @Immutable
 data class DinaSpacing(
+    val xxs: Dp = 2.dp,
     val xs: Dp = 4.dp,
     val s: Dp = 8.dp,
     val m: Dp = 12.dp,
@@ -202,8 +212,52 @@ data class DinaSpacing(
     val xxl: Dp = 36.dp,
     /** Side margin of every screen. */
     val gutter: Dp = 20.dp,
+    /** Inside cards and bubbles: text starts [cardX] from the edge; hints under a card line up with it. */
+    val cardX: Dp = 18.dp,
+    val cardY: Dp = 16.dp,
+    /** Between the cards of a list. */
+    val stack: Dp = 10.dp,
+    /** Between an icon and its label. */
+    val iconGap: Dp = 8.dp,
     /** Minimum touch target. */
     val touch: Dp = 48.dp,
+)
+
+/** Fixed sizes of icons, the character and controls. */
+@Immutable
+data class DinaSizes(
+    val iconSmall: Dp = 16.dp,
+    val icon: Dp = 20.dp,
+    val iconLarge: Dp = 24.dp,
+    /** Text fields and the round button next to them. */
+    val field: Dp = 52.dp,
+    val avatar: Dp = 38.dp,
+    /** Dina on the voice screen, in the empty chat and in empty lists. */
+    val character: Dp = 244.dp,
+    val characterSmall: Dp = 164.dp,
+    val characterTiny: Dp = 64.dp,
+    /** Each look in the picker (Ajustes › Apariencia). */
+    val characterCard: Dp = 112.dp,
+    val dial: Dp = 90.dp,
+    val dialCompact: Dp = 74.dp,
+    val dialStroke: Dp = 9.dp,
+    val dialStrokeCompact: Dp = 7.dp,
+    val dialIcon: Dp = 30.dp,
+    val dialIconCompact: Dp = 26.dp,
+    val switchWidth: Dp = 52.dp,
+    val switchHeight: Dp = 32.dp,
+    val sliderThumb: Dp = 26.dp,
+    /** Hand-drawn bars: loading progress and the sound meter. */
+    val bar: Dp = 12.dp,
+    val meterWidth: Dp = 54.dp,
+    val meterHeight: Dp = 22.dp,
+    /** Hand-drawn outline width and the off-register shadow offset. */
+    val stroke: Dp = 1.6.dp,
+    val shadowOffset: Dp = 3.dp,
+    /** How far content travels when it appears. */
+    val lift: Dp = 14.dp,
+    /** Readable line length for bubbles and cards on wide screens. */
+    val readable: Dp = 360.dp,
 )
 
 @Immutable
@@ -212,17 +266,43 @@ data class DinaShapes(
     val control: RoundedCornerShape = RoundedCornerShape(18.dp),
     val bubble: RoundedCornerShape = RoundedCornerShape(22.dp),
     val pill: RoundedCornerShape = RoundedCornerShape(50),
-    /** Corner radius used by hand-drawn outlines (they draw their own path). */
+    /** Corner radii used by hand-drawn outlines (they draw their own path). */
     val cardRadius: Dp = 26.dp,
+    val buttonRadius: Dp = 24.dp,
+    val bubbleRadius: Dp = 22.dp,
+    val chipRadius: Dp = 14.dp,
 )
 
-/** Durations in ms. [reduced] follows the system "remove animations" setting. */
+/** A spring: [dampingRatio] < 1 overshoots a little, higher [stiffness] arrives sooner. */
+@Immutable
+data class DinaSpring(val dampingRatio: Float, val stiffness: Float)
+
+/**
+ * Durations in ms and the springs every animation uses. [reduced] follows the system
+ * "remove animations" setting; the helpers in `ui/components/Motion.kt` then jump to the end.
+ */
 @Immutable
 data class DinaMotion(
     val reduced: Boolean = false,
     val quick: Int = 140,
     val standard: Int = 260,
     val gentle: Int = 420,
+    /** Between items that appear one after another. */
+    val stagger: Int = 60,
+    /** Loops: the typing dots, the loading shimmer. */
+    val loop: Int = 900,
+    /** Half a swing of a ringing timer or alarm. */
+    val ring: Int = 260,
+    /** Dina blending from one expression to the next. */
+    val character: Int = 450,
+    /** Presses, toggles and markers: fast, barely any bounce. */
+    val snappy: DinaSpring = DinaSpring(dampingRatio = 0.72f, stiffness = 900f),
+    /** Things that arrive (cards, bubbles, messages): a soft settle. */
+    val lively: DinaSpring = DinaSpring(dampingRatio = 0.68f, stiffness = 320f),
+    /** Layout: moving list items, sizes, screens sliding. No overshoot. */
+    val smooth: DinaSpring = DinaSpring(dampingRatio = 1f, stiffness = 420f),
+    /** Values that follow live data (progress, sound level): calm, no overshoot. */
+    val calm: DinaSpring = DinaSpring(dampingRatio = 1f, stiffness = 120f),
 ) {
     /** 0 when motion is reduced, so animations jump to their end. */
     fun ms(duration: Int) = if (reduced) 0 else duration
@@ -230,14 +310,16 @@ data class DinaMotion(
 
 private val LocalPalette = staticCompositionLocalOf { LightMeadow }
 private val LocalSpacing = staticCompositionLocalOf { DinaSpacing() }
+private val LocalSizes = staticCompositionLocalOf { DinaSizes() }
 private val LocalType = staticCompositionLocalOf { DinaType() }
 private val LocalShapes = staticCompositionLocalOf { DinaShapes() }
 private val LocalMotion = staticCompositionLocalOf { DinaMotion() }
 
-/** Access as `Dina.colors`, `Dina.type`, `Dina.spacing`, `Dina.shapes`, `Dina.motion` inside composables. */
+/** Access as `Dina.colors`, `Dina.type`, `Dina.spacing`, `Dina.sizes`, `Dina.shapes`, `Dina.motion` inside composables. */
 object Dina {
     val colors: DinaPalette @Composable get() = LocalPalette.current
     val spacing: DinaSpacing @Composable get() = LocalSpacing.current
+    val sizes: DinaSizes @Composable get() = LocalSizes.current
     val type: DinaType @Composable get() = LocalType.current
     val shapes: DinaShapes @Composable get() = LocalShapes.current
     val motion: DinaMotion @Composable get() = LocalMotion.current

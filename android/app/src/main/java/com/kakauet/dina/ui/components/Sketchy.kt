@@ -1,17 +1,22 @@
 package com.kakauet.dina.ui.components
 
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -86,8 +91,8 @@ fun Modifier.sketchBackground(
     shadow: Color? = null,
     radius: Dp = Dina.shapes.cardRadius,
     tail: Tail = Tail.NONE,
-    stroke: Dp = 1.6.dp,
-    shadowOffset: Dp = 3.dp,
+    stroke: Dp = Dina.sizes.stroke,
+    shadowOffset: Dp = Dina.sizes.shadowOffset,
     seed: Int = 1,
 ): Modifier = this.then(
     remember(fill, outline, shadow, radius, tail, stroke, shadowOffset, seed) {
@@ -111,12 +116,16 @@ fun Modifier.sketchBackground(
 internal fun Sketcher.circle(cx: Float, cy: Float, r: Float, jitter: Float, seed: Int, points: Int = 12): Line =
     ellipse(cx, cy, r, r, points, phase = seed * 0.37f).jitter(jitter, seed).curve(closed = true, steps = 6)
 
-/** Hand-drawn disk with an off-register shadow, used behind the character. */
 @Composable
-fun Halo(color: Color, shadow: Color, outline: Color?, modifier: Modifier = Modifier) {
+fun Halo(color: Color, shadow: Color, outline: Color?, modifier: Modifier = Modifier) = Halo({ color }, shadow, outline, modifier)
+
+/** Hand-drawn disk with an off-register shadow, used behind the character. [color] is read in the draw phase, so it can animate. */
+@Composable
+fun Halo(color: () -> Color, shadow: Color, outline: Color?, modifier: Modifier = Modifier) {
+    val fill by rememberUpdatedState(color)
     Spacer(
         modifier.then(
-            remember(color, shadow, outline) {
+            remember(shadow, outline) {
                 Modifier.drawWithCache {
                     val sk = Sketcher()
                     val r = size.minDimension / 2f * 0.94f
@@ -127,7 +136,7 @@ fun Halo(color: Color, shadow: Color, outline: Color?, modifier: Modifier = Modi
                     val offset = r * 0.035f
                     onDrawBehind {
                         translate(offset, offset) { drawPath(disk, shadow) }
-                        drawPath(disk, color)
+                        drawPath(disk, fill())
                         if (outline != null) drawPath(ink, outline)
                     }
                 }
@@ -146,7 +155,7 @@ fun SketchRing(
     color: Color,
     track: Color,
     modifier: Modifier = Modifier,
-    thickness: Dp = 9.dp,
+    thickness: Dp = Dina.sizes.dialStroke,
 ) {
     Spacer(
         modifier.drawWithCache {
@@ -189,8 +198,9 @@ fun SketchRing(
 
 /** Hand-drawn check box: wobbly rounded square, filled and ticked with a stroke that draws itself in. */
 @Composable
-fun SketchCheck(checked: Boolean, color: Color, outline: Color, mark: Color, modifier: Modifier = Modifier, size: Dp = 24.dp) {
-    val progress by animateFloatAsState(if (checked) 1f else 0f, tween(Dina.motion.ms(Dina.motion.standard)), label = "check")
+fun SketchCheck(checked: Boolean, color: Color, outline: Color, mark: Color, modifier: Modifier = Modifier, size: Dp = Dina.sizes.iconLarge) {
+    val motion = Dina.motion
+    val progress by animateFloatAsState(if (checked) 1f else 0f, motion.spring(motion.smooth), label = "check")
     Spacer(
         modifier.size(size).drawWithCache {
             val sk = Sketcher()
@@ -200,26 +210,104 @@ fun SketchCheck(checked: Boolean, color: Color, outline: Color, mark: Color, mod
             val ink = Path().also { sk.brush(it, 1.8f * density, 11, line, variation = 0.3f, weight = 0.4f) }
             val tick = Path()
             onDrawBehind {
-                drawPath(box, color, alpha = progress)
-                drawPath(ink, if (progress > 0.5f) color else outline)
-                if (progress > 0.01f) {
+                val p = progress.coerceIn(0f, 1f)
+                drawPath(box, color, alpha = p)
+                drawPath(ink, if (p > 0.5f) color else outline)
+                if (p > 0.01f) {
                     tick.rewind()
                     // Two strokes of the tick, revealed in order.
-                    val xs = floatArrayOf(0.24f, 0.43f, 0.78f)
-                    val ys = floatArrayOf(0.52f, 0.71f, 0.3f)
-                    val reach = progress * 2f
-                    sk.begin().point(xs[0] * s, ys[0] * s)
+                    val reach = p * 2f
+                    sk.begin().point(TICK_X[0] * s, TICK_Y[0] * s)
                     val first = reach.coerceAtMost(1f)
-                    sk.point((xs[0] + (xs[1] - xs[0]) * first) * s, (ys[0] + (ys[1] - ys[0]) * first) * s)
+                    sk.point((TICK_X[0] + (TICK_X[1] - TICK_X[0]) * first) * s, (TICK_Y[0] + (TICK_Y[1] - TICK_Y[0]) * first) * s)
                     if (reach > 1f) {
                         val second = (reach - 1f).coerceAtMost(1f)
-                        sk.point((xs[1] + (xs[2] - xs[1]) * second) * s, (ys[1] + (ys[2] - ys[1]) * second) * s)
+                        sk.point((TICK_X[1] + (TICK_X[2] - TICK_X[1]) * second) * s, (TICK_Y[1] + (TICK_Y[2] - TICK_Y[1]) * second) * s)
                     }
                     sk.polyline(closed = false)
                     sk.brush(tick, 2.4f * density, 12, variation = 0.2f, taper = 0.2f, weight = 0f)
                     drawPath(tick, mark)
                 }
             }
+        },
+    )
+}
+
+private val TICK_X = floatArrayOf(0.24f, 0.43f, 0.78f)
+private val TICK_Y = floatArrayOf(0.52f, 0.71f, 0.3f)
+
+/**
+ * Hand-drawn progress bar. [progress] is read in the draw phase; [shimmer] (0..1, a looping
+ * phase) sweeps a soft highlight over the filled part to show work is going on.
+ */
+@Composable
+fun SketchBar(
+    progress: () -> Float,
+    modifier: Modifier = Modifier,
+    color: Color = Dina.colors.accent,
+    track: Color = Dina.colors.surfaceSunken,
+    outline: Color = Dina.colors.lineStrong,
+    shimmer: (() -> Float)? = null,
+) {
+    val highlight = Dina.colors.onAccent.copy(alpha = 0.28f)
+    Spacer(
+        modifier.fillMaxWidth().height(Dina.sizes.bar).drawWithCache {
+            val sk = Sketcher()
+            val line = sk.roundRect(size.width, size.height, size.height / 2f, density, seed = 91)
+            val body = Path().also { sk.fill(it, line) }
+            val ink = Path().also { sk.brush(it, 1.4f * density, 92, line, variation = 0.3f, weight = 0.5f) }
+            onDrawBehind {
+                drawPath(body, track)
+                val p = progress().coerceIn(0f, 1f)
+                if (p > 0f) clipRect(right = size.width * p) {
+                    drawPath(body, color)
+                    val phase = shimmer?.invoke()
+                    if (phase != null) {
+                        val band = size.width * 0.22f
+                        drawRect(highlight, Offset(-band + (size.width * p + band) * phase, 0f), Size(band, size.height))
+                    }
+                }
+                drawPath(ink, outline)
+            }
+        },
+    )
+}
+
+/** Five small bars that rise with the sound [level] (0..1, read in the draw phase), tallest in the middle. */
+@Composable
+fun LevelMeter(level: () -> Float, modifier: Modifier = Modifier, color: Color = Dina.colors.accent) {
+    Spacer(
+        modifier.size(Dina.sizes.meterWidth, Dina.sizes.meterHeight).drawWithCache {
+            val bars = METER_REACH.size
+            val gap = size.width / (bars * 2.6f)
+            val w = (size.width - gap * (bars - 1)) / bars
+            val radius = CornerRadius(w / 2f)
+            onDrawBehind {
+                val l = level().coerceIn(0f, 1f)
+                for (i in 0 until bars) {
+                    val h = (w + (size.height - w) * (l * METER_REACH[i]).coerceAtMost(1f))
+                    drawRoundRect(color, Offset(i * (w + gap), (size.height - h) / 2f), Size(w, h), radius, alpha = 0.55f + 0.45f * l)
+                }
+            }
+        },
+    )
+}
+
+private val METER_REACH = floatArrayOf(0.55f, 1.05f, 1.5f, 1.05f, 0.55f)
+
+/** A short hand-drawn rule between rows of a grouped card. */
+@Composable
+fun SketchDivider(modifier: Modifier = Modifier, color: Color = Dina.colors.line, seed: Int = 95) {
+    Spacer(
+        modifier.fillMaxWidth().height(Dina.spacing.xxs).drawWithCache {
+            val sk = Sketcher()
+            val y = size.height / 2f
+            sk.begin()
+            val steps = maxOf(2, (size.width / (24f * density)).toInt())
+            for (i in 0..steps) sk.point(size.width * i / steps, y)
+            sk.jitter(0.6f * density, seed).curve(false, 3)
+            val ink = Path().also { sk.brush(it, 1.2f * density, seed, variation = 0.4f, taper = 0.6f, weight = 0f) }
+            onDrawBehind { drawPath(ink, color) }
         },
     )
 }

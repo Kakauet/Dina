@@ -32,12 +32,23 @@ interface TextGenerator {
     suspend fun warm(prefix: String): Int = 0
 }
 
-/** llama.cpp through JNI (`cpp/dina_llm_jni.cpp`). One model per instance. */
+/**
+ * llama.cpp through JNI (`cpp/dina_llm_jni.cpp`). The native model and context are global to the
+ * process (`g_model`/`g_context`): loading in one instance frees what another loaded. Only the
+ * instance that loaded last may free it, so closing a stale engine never unloads a newer model.
+ */
 class NativeLlmEngine : TextGenerator, AutoCloseable {
-    private var loaded = false
+    private enum class State { NEW, LOADING, LOADED, CLOSED }
+
+    private val lock = Any()
+    @Volatile private var state = State.NEW
+    private val loaded get() = state == State.LOADED
 
     companion object {
         init { System.loadLibrary("dina_native") }
+
+        /** The engine whose model is in llama.cpp's global state. */
+        private var owner: NativeLlmEngine? = null // guarded by the companion
     }
 
     private external fun nativeLoad(path: String, threads: Int, contextSize: Int): Boolean
@@ -49,12 +60,25 @@ class NativeLlmEngine : TextGenerator, AutoCloseable {
     private external fun nativeStats(): String
     private external fun nativeClose()
 
+    /**
+     * Loads the model. The native call cannot be interrupted: closing the engine meanwhile (or a
+     * cancelled caller that closes it afterwards) frees the model as soon as the call returns.
+     */
     suspend fun load(path: String, threads: Int = 6, contextSize: Int = 2048) = withContext(Dispatchers.IO) {
-        if (!nativeLoad(path, threads, contextSize)) {
-            nativeClose()
+        synchronized(lock) {
+            check(state == State.NEW) { "El modelo de lenguaje ya se cargó en este motor" }
+            state = State.LOADING
+            synchronized(NativeLlmEngine) { owner = this@NativeLlmEngine }
+        }
+        val ok = nativeLoad(path, threads, contextSize)
+        synchronized(lock) {
+            if (ok && state == State.LOADING) { state = State.LOADED; return@withContext }
+            val closedMeanwhile = state == State.CLOSED
+            state = State.CLOSED
+            freeNative()
+            if (closedMeanwhile) error("El motor se cerró mientras cargaba el modelo")
             error("No se pudo cargar el modelo de lenguaje")
         }
-        loaded = true
     }
 
     override suspend fun generate(prompt: String, maxTokens: Int, onToken: (String) -> Unit, grammar: String?): LlmResult =
@@ -94,8 +118,18 @@ class NativeLlmEngine : TextGenerator, AutoCloseable {
     /** Decoding and prompt-processing threads, applied from the next call (no reload). */
     fun setThreads(threads: Int, batchThreads: Int = threads) { if (loaded) nativeSetThreads(threads, batchThreads) }
 
-    override fun close() {
-        if (loaded) nativeClose()
-        loaded = false
+    /** While [load] runs this only marks the engine closed; [load] frees the model when the native call returns. */
+    override fun close() = synchronized(lock) {
+        val previous = state
+        state = State.CLOSED
+        if (previous == State.LOADED) freeNative()
+    }
+
+    private fun freeNative() {
+        synchronized(NativeLlmEngine) {
+            if (owner !== this) return
+            nativeClose()
+            owner = null
+        }
     }
 }

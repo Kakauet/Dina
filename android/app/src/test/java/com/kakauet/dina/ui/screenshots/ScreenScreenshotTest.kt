@@ -7,6 +7,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import com.kakauet.dina.core.ConversationController
 import com.kakauet.dina.core.DinaMessage
+import com.kakauet.dina.core.LoadStage
 import com.kakauet.dina.core.MessageRole
 import com.kakauet.dina.core.PerformanceMetrics
 import com.kakauet.dina.core.SessionState
@@ -84,6 +85,33 @@ class ScreenScreenshotTest {
     )
 
     @Test fun homeMusgo() = home("home-6-musgo", session(VoiceState.LISTENING), level = 0.5f, design = CharacterDesign.MUSGO)
+
+    @Test fun homeLoading() = home(
+        "home-7-loading",
+        session(VoiceState.LOADING, "Cargando Dina 4.5 1.2B…", ready = false, loadProgress = LoadStage.BRAIN.progress(0.4f)),
+    )
+
+    @Test fun homeLoadingDark() = home(
+        "home-8-loading-dark",
+        session(VoiceState.LOADING, "Copiando Supertonic 3/7 · 6/12", ready = false, loadProgress = LoadStage.COPY.progress(0.45f)),
+        dark = true,
+        design = CharacterDesign.MUSGO,
+    )
+
+    /** A small phone (360 × 740 dp) with the system font at 130 %. */
+    @Config(qualifiers = "w360dp-h740dp-xhdpi", fontScale = 1.3f)
+    @Test fun homeSmallLargeFont() = home("home-9-small-font", session(VoiceState.IDLE))
+
+    @Config(qualifiers = "w360dp-h740dp-xhdpi", fontScale = 1.3f)
+    @Test fun chatSmallLargeFont() = home("chat-4-small-font", session(VoiceState.SPEAKING), mode = HomeMode.TEXT, messages = conversation.dropLast(1), level = 0.5f)
+
+    @Config(qualifiers = "w360dp-h740dp-xhdpi", fontScale = 1.3f)
+    @Test fun thingsSmallLargeFont() = compose.snap("screens", "things-4-small-font") { Themed { MyThingsScreen(world(), onClose = {}) } }
+
+    @Config(qualifiers = "w360dp-h740dp-xhdpi", fontScale = 1.3f)
+    @Test fun settingsSmallLargeFont() = compose.snap("screens", "settings-4-small-font") {
+        Themed(dark = true) { SettingsScreen(UiPreferences(RuntimeEnvironment.getApplication()), onClose = {}, onOpenDiagnostics = {}, onNewConversation = {}) }
+    }
 
     @Test fun chatEmpty() = home("chat-1-empty", session(VoiceState.IDLE, ConversationController.TEXT_IDLE), mode = HomeMode.TEXT, messages = emptyList())
 
@@ -165,7 +193,8 @@ private fun session(
     transcript: String = "",
     response: String = "",
     widget: ContextualWidget? = null,
-) = SessionState(state, detail, ready, transcript, response, widget)
+    loadProgress: Float = 0f,
+) = SessionState(state, detail, ready, transcript, response, widget, loadProgress = loadProgress)
 
 private val conversation = listOf(
     DinaMessage(1, MessageRole.USER, "Pon un temporizador de 10 minutos para la pasta"),

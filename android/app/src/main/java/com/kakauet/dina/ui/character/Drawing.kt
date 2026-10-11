@@ -1,7 +1,7 @@
 package com.kakauet.dina.ui.character
 
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -40,8 +40,17 @@ internal class Frame(val sk: Sketcher) {
     var detail = true
     var texture: Texture? = null
     var colors: CharacterColors = CharacterInk
+    /** The watercolor edge inside riso fills; rebuilt only when the size changes. */
+    var edge = Stroke(1f)
+        private set
     private val pool = ArrayList<Path>()
     private var next = 0
+
+    // Hatching gradients by fill bounds and shade: a few slots, reused every frame.
+    private val gradients = arrayOfNulls<Brush>(GRADIENT_SLOTS)
+    private val gradientKeys = LongArray(GRADIENT_SLOTS)
+    private val gradientShades = LongArray(GRADIENT_SLOTS)
+    private var nextGradient = 0
 
     /** Sets the size-dependent values; call before building or drawing. */
     fun size(side: Float, density: Float) {
@@ -50,7 +59,44 @@ internal class Frame(val sk: Sketcher) {
         jitter = side * 0.0055f
         ink = maxOf(side * 0.0145f, 1.3f * density)
         detail = side / density >= 80f
+        edge = Stroke(side * 0.05f)
+        gradients.fill(null)
     }
+
+    /** A gradient from [from] (clear) to [to] (shade); the same bounds within 2 px reuse the last one. */
+    fun hatchBrush(from: Offset, to: Offset, shade: Color): Brush {
+        fun q(v: Float) = (v / 2f).toInt().toLong() and 0xFFFF
+        val key = (q(from.x) shl 48) or (q(from.y) shl 32) or (q(to.x) shl 16) or q(to.y)
+        val tone = shade.value.toLong()
+        for (i in 0 until GRADIENT_SLOTS) {
+            val brush = gradients[i]
+            if (brush != null && gradientKeys[i] == key && gradientShades[i] == tone) return brush
+        }
+        val slot = nextGradient
+        nextGradient = (nextGradient + 1) % GRADIENT_SLOTS
+        return Brush.linearGradient(listOf(Color.Transparent, shade.copy(alpha = 0.5f * shade.alpha)), start = from, end = to).also {
+            gradients[slot] = it
+            gradientKeys[slot] = key
+            gradientShades[slot] = tone
+        }
+    }
+
+    // Eye glints of the current frame (x, y, r), drawn after the lids.
+    private val glints = FloatArray(12)
+    private var glintCount = 0
+
+    fun glint(x: Float, y: Float, r: Float) {
+        if (glintCount * 3 + 2 >= glints.size) return
+        glints[glintCount * 3] = x; glints[glintCount * 3 + 1] = y; glints[glintCount * 3 + 2] = r
+        glintCount++
+    }
+
+    fun DrawScope.drawGlints(color: Color) {
+        for (i in 0 until glintCount) drawCircle(color, glints[i * 3 + 2], Offset(glints[i * 3], glints[i * 3 + 1]))
+        glintCount = 0
+    }
+
+    private companion object { const val GRADIENT_SLOTS = 12 }
 
     fun start() { next = 0 }
 
@@ -71,7 +117,9 @@ internal class Frame(val sk: Sketcher) {
 
 /**
  * Fills [fill] slightly off-register (by [dx], [dy]), with a watercolor edge, pencil hatching on
- * the shadow side and paper grain.
+ * the shadow side and paper grain. The hatching fades in from [light] to [dark] (by default the
+ * center and bottom-right corner of the fill); pass them for paths drawn every frame, since
+ * measuring the bounds allocates.
  */
 internal fun DrawScope.riso(
     f: Frame,
@@ -81,22 +129,34 @@ internal fun DrawScope.riso(
     textured: Boolean = true,
     dx: Float = f.misX,
     dy: Float = f.misY,
+    light: Offset = Offset.Unspecified,
+    dark: Offset = Offset.Unspecified,
 ) {
     translate(dx, dy) {
         drawPath(fill, color)
         val texture = f.texture
         if (f.detail && textured && texture != null) {
-            val bounds = fill.getBounds()
+            var from = light
+            var to = dark
+            if (!from.isSpecified || !to.isSpecified) {
+                val bounds = fill.getBounds()
+                from = bounds.center
+                to = bounds.bottomRight
+            }
             clipPath(fill) {
-                drawPath(fill, shade, alpha = 0.22f, style = Stroke(f.side * 0.05f))
-                drawPath(
-                    texture.hatching[f.boil],
-                    Brush.linearGradient(listOf(Color.Transparent, shade.copy(alpha = 0.5f * shade.alpha)), start = bounds.center, end = bounds.bottomRight),
-                )
+                drawPath(fill, shade, alpha = 0.22f, style = f.edge)
+                drawPath(texture.hatching[f.boil], f.hatchBrush(from, to, shade))
                 drawPath(texture.grain, shade, alpha = 0.14f)
             }
         }
     }
+}
+
+/** Center and bottom-right corner of a path, measured once, for [riso]'s hatching. */
+internal class HatchSpan(path: Path) {
+    private val bounds = path.getBounds()
+    val light get() = Offset(bounds.center.x, bounds.center.y)
+    val dark get() = Offset(bounds.right, bounds.bottom)
 }
 
 internal fun smooth01(edge0: Float, edge1: Float, x: Float): Float {
@@ -141,7 +201,6 @@ internal fun DrawScope.face(f: Frame, pose: Pose, fx: Float, fy: Float, k: Float
     // Eyes: a filled lens whose lower lid can rise into a smiling crescent, inked along the upper lid.
     val fills = f.path()
     val lids = f.path()
-    val shine = f.path()
     for (s in SIDES) {
         val ecx = cx + s * ex + pose.lookX * 0.012f * k
         val ecy = cy - 0.012f * k + pose.lookY * 0.016f * k
@@ -171,13 +230,13 @@ internal fun DrawScope.face(f: Frame, pose: Pose, fx: Float, fy: Float, k: Float
         val glint = smooth01(0.45f, 0.85f, open) * (1f - smooth01(0.3f, 0.6f, happy))
         if (glint > 0f) {
             // The glint follows the gaze, which sells where she is looking.
-            shine.addOval(Rect(Offset(ecx + ew * (0.3f + 0.25f * pose.lookX), ecy - top * (0.36f - 0.3f * pose.lookY)), ew * 0.36f * glint))
-            if (f.detail) shine.addOval(Rect(Offset(ecx - ew * 0.28f, ecy + top * 0.4f), ew * 0.15f * glint))
+            f.glint(ecx + ew * (0.3f + 0.25f * pose.lookX), ecy - top * (0.36f - 0.3f * pose.lookY), ew * 0.36f * glint)
+            if (f.detail) f.glint(ecx - ew * 0.28f, ecy + top * 0.4f, ew * 0.15f * glint)
         }
     }
     drawPath(fills, c.ink)
     drawPath(lids, c.ink)
-    drawPath(shine, c.shine)
+    with(f) { drawGlints(c.shine) }
 
     // Brows: only when the expression needs them.
     if (pose.brow > 0.02f) {

@@ -1,9 +1,16 @@
 # Hoja de ruta
 
-**Versión actual: app 2.4 con Dina 4.5** (octubre de 2026), en dos ediciones: Dina (1.2B: RW2 v2.0 86,1 %,
+**Versión actual: app 2.4.1 con Dina 4.5** (octubre de 2026), en dos ediciones: Dina (1.2B: RW2 v2.0 86,1 %,
 conversiones 95,3 %, Dina-Real 85,0 %) y Dina Lite (350M: 79,9 % y 79 %), las dos con 0 afirmaciones falsas.
-La 2.4 habla antes y sin huecos (voz recortada, guía solo en los primeros pasos, caché de audio). Lo hecho
-hasta aquí está en [HISTORY.md](HISTORY.md).
+La 2.4 habla antes y sin huecos (voz recortada, guía solo en los primeros pasos, caché de audio); la 2.4.1
+corrige la carga de modelos y pule la interfaz. Lo hecho hasta aquí está en [HISTORY.md](HISTORY.md).
+
+## Pendiente de la 2.4.1
+
+En el móvil (Robolectric no muestra velocidad real, tacto ni rendimiento): cambiar la voz o Moonshine mientras
+carga y pulsar Reintentar varias veces (una sola carga, la barra no retrocede); un fallo en «Medir una
+respuesta» debe volver a esperar «Dina»; sensación de los springs al pulsar, cambiar de modo y de pantalla;
+fluidez con temporizador y cronómetro en marcha; animaciones desactivadas; TalkBack en la compra y las alarmas.
 
 ## Pendiente de la 2.4
 

@@ -1,12 +1,16 @@
 package com.kakauet.dina.ui.widgets
 
-import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,6 +33,7 @@ import androidx.compose.material3.TimePickerDefaults
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -38,18 +43,24 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.kakauet.dina.core.VoiceState
 import com.kakauet.dina.dina
 import com.kakauet.dina.tools.Alarm
 import com.kakauet.dina.tools.AlarmCommand
@@ -73,8 +84,10 @@ import com.kakauet.dina.tools.ToolWorldJson
 import com.kakauet.dina.tools.VolumeCommand
 import com.kakauet.dina.tools.WhenSpec
 import com.kakauet.dina.tools.WidgetKind
+import com.kakauet.dina.ui.character.Sketcher
 import com.kakauet.dina.ui.components.Action
 import com.kakauet.dina.ui.components.ActionRow
+import com.kakauet.dina.ui.components.AnimatedColumn
 import com.kakauet.dina.ui.components.ButtonStyle
 import com.kakauet.dina.ui.components.Caption
 import com.kakauet.dina.ui.components.CardTone
@@ -86,11 +99,18 @@ import com.kakauet.dina.ui.components.DinaSlider
 import com.kakauet.dina.ui.components.DinaSwitch
 import com.kakauet.dina.ui.components.DinaTextField
 import com.kakauet.dina.ui.components.EmptyState
+import com.kakauet.dina.ui.components.FitText
 import com.kakauet.dina.ui.components.Overline
 import com.kakauet.dina.ui.components.RoundIconButton
 import com.kakauet.dina.ui.components.SketchCheck
 import com.kakauet.dina.ui.components.SketchIcon
 import com.kakauet.dina.ui.components.SketchRing
+import com.kakauet.dina.ui.components.enter
+import com.kakauet.dina.ui.components.exit
+import com.kakauet.dina.ui.components.pressFeedback
+import com.kakauet.dina.ui.components.riseBetween
+import com.kakauet.dina.ui.components.spring
+import com.kakauet.dina.ui.components.tween
 import com.kakauet.dina.ui.theme.Dina
 import kotlinx.coroutines.delay
 import java.time.Instant
@@ -110,14 +130,19 @@ private fun rememberRunner(): (ToolCommand) -> Unit {
     return remember<(ToolCommand) -> Unit>(context) { { command -> context.dina.tools.execute(command) } }
 }
 
-/** Wall clock that ticks while the widget is on screen, for live countdowns. */
+/**
+ * Wall clock that ticks every [intervalMs] while [running] and the widget is on screen. It is a
+ * state: read it only where the time is shown (a small readout, or a ring in the draw phase), so
+ * the ticks do not recompose the whole card.
+ */
 @Composable
-fun rememberNow(intervalMs: Long = 250L): Long {
-    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    LaunchedEffect(intervalMs) {
-        while (true) {
-            now = System.currentTimeMillis()
+fun rememberClock(running: Boolean, intervalMs: Long = 250L): State<Long> {
+    val now = remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(running, intervalMs) {
+        now.longValue = System.currentTimeMillis()
+        while (running) {
             delay(intervalMs)
+            now.longValue = System.currentTimeMillis()
         }
     }
     return now
@@ -149,9 +174,10 @@ private fun hourMinute(ms: Long) = Instant.ofEpochMilli(ms).atZone(ZoneId.system
 /** A gentle back-and-forth used by ringing timers and alarms; still with reduced motion. */
 @Composable
 private fun ringingWobble(active: Boolean): () -> Float {
-    if (!active || Dina.motion.reduced) return { 0f }
+    val motion = Dina.motion
+    if (!active || motion.reduced) return { 0f }
     val transition = rememberInfiniteTransition(label = "ringing")
-    val wobble = transition.animateFloat(-1f, 1f, infiniteRepeatable(tween(260), RepeatMode.Reverse), label = "wobble")
+    val wobble = transition.animateFloat(-1f, 1f, infiniteRepeatable(tween(motion.ring), RepeatMode.Reverse), label = "wobble")
     return { wobble.value }
 }
 
@@ -160,9 +186,9 @@ private fun ringingWobble(active: Boolean): () -> Float {
 fun ContextualWidgetView(widget: ContextualWidget, world: ToolWorld, modifier: Modifier = Modifier) {
     Column(modifier) {
         when (widget.kind) {
-            WidgetKind.TIMER -> FocusedOrList(widget, world.timers, Timer::id, DinaIcon.HOURGLASS, "temporizadores") { TimerCard(it, compact = true) }
-            WidgetKind.ALARM -> FocusedOrList(widget, world.alarms, Alarm::id, DinaIcon.BELL, "alarmas") { AlarmCard(it, compact = true) }
-            WidgetKind.STOPWATCH -> FocusedOrList(widget, world.stopwatches, Stopwatch::id, DinaIcon.STOPWATCH, "cronómetros") { StopwatchCard(it, compact = true) }
+            WidgetKind.TIMER -> FocusedOrList(widget, world.timers, Timer::id, "temporizadores") { TimerCard(it, compact = true) }
+            WidgetKind.ALARM -> FocusedOrList(widget, world.alarms, Alarm::id, "alarmas") { AlarmCard(it, compact = true) }
+            WidgetKind.STOPWATCH -> FocusedOrList(widget, world.stopwatches, Stopwatch::id, "cronómetros") { StopwatchCard(it, compact = true) }
             WidgetKind.SHOPPING -> ShoppingCard(world.shopping, compact = true)
             WidgetKind.VOLUME -> VolumeCard()
             WidgetKind.CALCULATOR -> ValueCard("Cálculo", widget.value.orEmpty())
@@ -177,97 +203,124 @@ private fun <T> FocusedOrList(
     widget: ContextualWidget,
     items: List<T>,
     id: (T) -> String,
-    icon: DinaIcon,
     plural: String,
     card: @Composable (T) -> Unit,
 ) {
     if (widget.showAll) {
-        if (items.isEmpty()) EmptyState(icon, "No hay $plural", "Puedes pedírselo a Dina cuando quieras.")
+        if (items.isEmpty()) EmptyState("No hay $plural", "Cuando quieras, pídemelo.", mood = VoiceState.FOLLOW_UP)
         else Column(verticalArrangement = Arrangement.spacedBy(Dina.spacing.s)) {
             items.take(2).forEach { card(it) }
-            if (items.size > 2) Caption("+ ${items.size - 2} más en Mis cosas", Modifier.padding(start = 6.dp))
+            if (items.size > 2) Caption("+ ${items.size - 2} más en Mis cosas", Modifier.padding(start = Dina.spacing.cardX))
         }
     } else {
         val item = widget.focusId?.let { focus -> items.firstOrNull { id(it) == focus } } ?: items.lastOrNull()
-        if (item == null) EmptyState(icon, "Ya no está", "Ese elemento se ha terminado o se ha borrado.") else card(item)
+        if (item == null) EmptyState("Ya no está", "Ha terminado o se ha borrado.", mood = VoiceState.THINKING) else card(item)
     }
 }
 
-/** Ring with an icon in the middle; wobbles while ringing. */
+/** How a dial looks: running (accent), paused (muted, still) or ringing (warm, wobbling). */
+private enum class DialMood { RUNNING, PAUSED, RINGING }
+
+/** Ring with an icon in the middle; [progress] is read while drawing. */
 @Composable
-private fun Dial(progress: () -> Float, icon: DinaIcon, ringing: Boolean, compact: Boolean) {
+private fun Dial(progress: () -> Float, icon: DinaIcon, mood: DialMood, compact: Boolean) {
     val c = Dina.colors
-    val wobble = ringingWobble(ringing)
-    Box(Modifier.size(if (compact) 74.dp else 90.dp), contentAlignment = Alignment.Center) {
+    val wobble = ringingWobble(mood == DialMood.RINGING)
+    val (ring, track, ink) = when (mood) {
+        DialMood.RUNNING -> Triple(c.accent, c.surfaceSunken, c.accent)
+        DialMood.PAUSED -> Triple(c.lineStrong, c.surfaceSunken, c.inkMuted)
+        DialMood.RINGING -> Triple(c.warm, c.warm.copy(alpha = 0.3f), c.onWarm)
+    }
+    Box(Modifier.size(if (compact) Dina.sizes.dialCompact else Dina.sizes.dial), contentAlignment = Alignment.Center) {
         SketchRing(
             progress,
-            color = if (ringing) c.warm else c.accent,
-            track = if (ringing) c.warm.copy(alpha = 0.3f) else c.surfaceSunken,
+            color = ring,
+            track = track,
             modifier = Modifier.matchParentSize().graphicsLayer {
                 val pulse = 1f + 0.04f * wobble()
                 scaleX = pulse
                 scaleY = pulse
             },
-            thickness = if (compact) 7.dp else 9.dp,
+            thickness = if (compact) Dina.sizes.dialStrokeCompact else Dina.sizes.dialStroke,
         )
         SketchIcon(
             icon,
             null,
             Modifier.graphicsLayer { rotationZ = 14f * wobble() },
-            tint = if (ringing) c.onWarm else c.accent,
-            size = if (compact) 26.dp else 30.dp,
+            tint = ink,
+            size = if (compact) Dina.sizes.dialIconCompact else Dina.sizes.dialIcon,
         )
     }
+}
+
+/** A big number that shrinks to fit narrow cards and large fonts instead of being cut. */
+@Composable
+private fun BigNumber(text: String, small: Boolean, color: Color, modifier: Modifier = Modifier) {
+    val style = if (small) Dina.type.numberSmall else Dina.type.number
+    val tint by animateColorAsState(color, Dina.motion.tween(Dina.motion.standard), label = "number")
+    FitText(text, style, { tint }, modifier, minSize = Dina.type.numberMin)
 }
 
 @Composable
 fun TimerCard(timer: Timer, compact: Boolean = false) {
     val execute = rememberRunner()
-    val now = rememberNow()
     val c = Dina.colors
-    val remaining = timer.remainingAt(now)
+    val motion = Dina.motion
     val ringing = timer.status == TimerStatus.RINGING
-    val shown = ceil(remaining / 1000.0).toLong() * 1000
+    val paused = timer.status == TimerStatus.PAUSED
+    val now = rememberClock(running = timer.status == TimerStatus.RUNNING)
     DinaCard(tone = if (ringing) CardTone.WARM else CardTone.PLAIN) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Dial({ if (ringing) 1f else remaining.toFloat() / timer.durationMs.coerceAtLeast(1L) }, if (ringing) DinaIcon.BELL else DinaIcon.HOURGLASS, ringing, compact)
-            Column(Modifier.padding(start = 16.dp).weight(1f)) {
+            Dial(
+                { if (ringing) 1f else timer.remainingAt(now.value).toFloat() / timer.durationMs.coerceAtLeast(1L) },
+                when { ringing -> DinaIcon.BELL; paused -> DinaIcon.PAUSE; else -> DinaIcon.HOURGLASS },
+                when { ringing -> DialMood.RINGING; paused -> DialMood.PAUSED; else -> DialMood.RUNNING },
+                compact,
+            )
+            Column(Modifier.padding(start = Dina.spacing.l - Dina.spacing.xxs).weight(1f)) {
                 Overline("Temporizador" + (timer.label?.let { " · $it" } ?: ""), color = if (ringing) c.onWarm else c.accent)
-                Text(
-                    if (ringing) "¡Tiempo!" else clock(shown),
-                    Modifier.clearAndSetSemantics {
-                        contentDescription = if (ringing) "El temporizador está sonando" else "Quedan ${spoken(shown)}"
-                    },
-                    style = if (compact || shown >= 3_600_000L) Dina.type.numberSmall else Dina.type.number,
-                    color = if (ringing) c.onWarm else c.ink,
-                    maxLines = 1,
-                )
-                Caption(
-                    when (timer.status) {
-                        TimerStatus.RUNNING -> "Suena a las ${hourMinute(timer.deadlineMs)}"
-                        TimerStatus.PAUSED -> "En pausa"
-                        TimerStatus.RINGING -> "Ha terminado"
-                    },
-                    color = if (ringing) c.onWarm else c.inkMuted,
+                TimerReadout(timer, now, compact)
+                if (paused) Chip("En pausa", Modifier.padding(top = Dina.spacing.xxs), DinaIcon.PAUSE, tone = CardTone.PLAIN)
+                else Caption(if (ringing) "Ha terminado" else "Suena a las ${hourMinute(timer.deadlineMs)}", color = if (ringing) c.onWarm else c.inkMuted)
+            }
+        }
+        AnimatedContent(ringing, transitionSpec = { riseBetween(motion) }, label = "timerActions") { ringingNow ->
+            if (ringingNow) {
+                ActionRow(Action("Detener", { execute(TimerCommand.Dismiss(byId(timer.id))) }, DinaIcon.CHECK, ButtonStyle.WARM), compact = compact)
+            } else {
+                ActionRow(
+                    Action(
+                        if (paused) "Seguir" else "Pausar",
+                        { execute(if (paused) TimerCommand.Resume(byId(timer.id)) else TimerCommand.Pause(byId(timer.id))) },
+                        if (paused) DinaIcon.PLAY else DinaIcon.PAUSE,
+                        ButtonStyle.PRIMARY,
+                    ),
+                    Action("Cancelar", { execute(TimerCommand.Cancel(byId(timer.id))) }, DinaIcon.CLOSE),
+                    compact = compact,
                 )
             }
         }
-        if (ringing) {
-            ActionRow(Action("Detener", { execute(TimerCommand.Dismiss(byId(timer.id))) }, DinaIcon.CHECK, ButtonStyle.WARM), compact = compact)
-        } else {
-            val paused = timer.status == TimerStatus.PAUSED
-            ActionRow(
-                Action(
-                    if (paused) "Reanudar" else "Pausar",
-                    { execute(if (paused) TimerCommand.Resume(byId(timer.id)) else TimerCommand.Pause(byId(timer.id))) },
-                    if (paused) DinaIcon.PLAY else DinaIcon.PAUSE,
-                    ButtonStyle.PRIMARY,
-                ),
-                Action("Cancelar", { execute(TimerCommand.Cancel(byId(timer.id))) }, DinaIcon.CLOSE),
-                compact = compact,
-            )
-        }
     }
+}
+
+/** The countdown itself: the only part of the card that changes every tick. */
+@Composable
+private fun TimerReadout(timer: Timer, now: State<Long>, compact: Boolean) {
+    val c = Dina.colors
+    val ringing = timer.status == TimerStatus.RINGING
+    val shown = ceil(timer.remainingAt(now.value) / 1000.0).toLong() * 1000
+    BigNumber(
+        if (ringing) "¡Tiempo!" else clock(shown),
+        small = compact || shown >= 3_600_000L,
+        color = when { ringing -> c.onWarm; timer.status == TimerStatus.PAUSED -> c.inkMuted; else -> c.ink },
+        modifier = Modifier.clearAndSetSemantics {
+            contentDescription = when {
+                ringing -> "El temporizador está sonando"
+                timer.status == TimerStatus.PAUSED -> "En pausa, quedan ${spoken(shown)}"
+                else -> "Quedan ${spoken(shown)}"
+            }
+        },
+    )
 }
 
 private fun dayLabel(next: java.time.ZonedDateTime): String {
@@ -285,49 +338,51 @@ private fun dayLabel(next: java.time.ZonedDateTime): String {
 fun AlarmCard(alarm: Alarm, compact: Boolean = false) {
     val execute = rememberRunner()
     val c = Dina.colors
+    val motion = Dina.motion
     var pickTime by rememberSaveable { mutableStateOf(false) }
     var pickRepeat by rememberSaveable { mutableStateOf(false) }
     val next = Instant.ofEpochMilli(alarm.nextMs).atZone(ZoneId.systemDefault())
+    val time = next.format(DateTimeFormatter.ofPattern("H:mm"))
     val enabled = alarm.status != AlarmStatus.DISABLED
     val ringing = alarm.status == AlarmStatus.RINGING
     DinaCard(tone = if (ringing) CardTone.WARM else CardTone.PLAIN) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            if (ringing) {
-                Dial({ 1f }, DinaIcon.BELL, ringing = true, compact = true)
-                Spacer(Modifier.width(16.dp))
+            AnimatedVisibility(ringing, enter = motion.enter(), exit = motion.exit()) {
+                Row {
+                    Dial({ 1f }, DinaIcon.BELL, DialMood.RINGING, compact = true)
+                    Spacer(Modifier.width(Dina.spacing.l - Dina.spacing.xxs))
+                }
             }
             Column(Modifier.weight(1f)) {
                 Overline(
                     "Alarma" + (alarm.label?.let { " · $it" } ?: "") + if (alarm.status == AlarmStatus.SNOOZED) " · pospuesta" else "",
                     color = if (ringing) c.onWarm else c.accent,
                 )
-                Text(
-                    next.format(DateTimeFormatter.ofPattern("H:mm")),
-                    style = if (compact) Dina.type.numberSmall else Dina.type.number,
-                    color = when { ringing -> c.onWarm; enabled -> c.ink; else -> c.inkMuted },
-                )
+                BigNumber(time, small = compact, color = when { ringing -> c.onWarm; enabled -> c.ink; else -> c.inkMuted })
                 Caption(dayLabel(next), color = if (ringing) c.onWarm else c.inkMuted)
-                if (alarm.repeat != null) Chip(ToolPresentation.repeatLabel(alarm.repeat), Modifier.padding(top = 6.dp), DinaIcon.REFRESH)
+                if (alarm.repeat != null) Chip(ToolPresentation.repeatLabel(alarm.repeat), Modifier.padding(top = Dina.spacing.s - Dina.spacing.xxs), DinaIcon.REFRESH)
             }
             if (!ringing) {
                 DinaSwitch(
                     checked = enabled,
                     onCheckedChange = { checked -> execute(if (checked) AlarmCommand.Enable(byId(alarm.id)) else AlarmCommand.Disable(byId(alarm.id))) },
-                    modifier = Modifier.semantics { contentDescription = "Alarma activada" },
+                    modifier = Modifier.semantics { contentDescription = "Alarma de las $time" },
                 )
             }
         }
-        if (ringing) {
-            ActionRow(
-                Action("Posponer", { execute(AlarmCommand.Snooze(byId(alarm.id))) }, DinaIcon.SNOOZE),
-                Action("Detener", { execute(AlarmCommand.Dismiss(byId(alarm.id))) }, DinaIcon.CHECK, ButtonStyle.WARM),
-                compact = compact,
-            )
-        } else {
-            Row(Modifier.fillMaxWidth().padding(top = Dina.spacing.m), horizontalArrangement = Arrangement.spacedBy(Dina.spacing.s), verticalAlignment = Alignment.CenterVertically) {
-                DinaButton("Hora", { pickTime = true }, Modifier.weight(1f), icon = DinaIcon.CLOCK.takeUnless { compact })
-                DinaButton("Repetir", { pickRepeat = true }, Modifier.weight(1f), icon = DinaIcon.REFRESH.takeUnless { compact })
-                RoundIconButton(DinaIcon.TRASH, "Eliminar alarma", { execute(AlarmCommand.Cancel(byId(alarm.id))) }, style = ButtonStyle.DANGER)
+        AnimatedContent(ringing, transitionSpec = { riseBetween(motion) }, label = "alarmActions") { ringingNow ->
+            if (ringingNow) {
+                ActionRow(
+                    Action("Posponer", { execute(AlarmCommand.Snooze(byId(alarm.id))) }, DinaIcon.SNOOZE),
+                    Action("Detener", { execute(AlarmCommand.Dismiss(byId(alarm.id))) }, DinaIcon.CHECK, ButtonStyle.WARM),
+                    compact = compact,
+                )
+            } else {
+                Row(Modifier.fillMaxWidth().padding(top = Dina.spacing.m), horizontalArrangement = Arrangement.spacedBy(Dina.spacing.s), verticalAlignment = Alignment.CenterVertically) {
+                    DinaButton("Hora", { pickTime = true }, Modifier.weight(1f), icon = DinaIcon.CLOCK.takeUnless { compact })
+                    DinaButton("Repetir", { pickRepeat = true }, Modifier.weight(1f), icon = DinaIcon.REFRESH.takeUnless { compact })
+                    RoundIconButton(DinaIcon.TRASH, "Eliminar la alarma de las $time", { execute(AlarmCommand.Cancel(byId(alarm.id))) }, style = ButtonStyle.DANGER)
+                }
             }
         }
     }
@@ -392,33 +447,41 @@ fun AlarmCard(alarm: Alarm, compact: Boolean = false) {
 @Composable
 fun StopwatchCard(stopwatch: Stopwatch, compact: Boolean = false) {
     val execute = rememberRunner()
-    val now = rememberNow(100L)
-    val c = Dina.colors
-    val elapsed = stopwatch.elapsedAt(now)
     val paused = stopwatch.status == StopwatchStatus.PAUSED
+    val now = rememberClock(running = !paused, intervalMs = 100L)
     DinaCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Dial({ (elapsed % 60_000L) / 60_000f }, DinaIcon.STOPWATCH, ringing = false, compact = compact)
-            Column(Modifier.padding(start = 16.dp).weight(1f)) {
+            Dial({ (stopwatch.elapsedAt(now.value) % 60_000L) / 60_000f }, if (paused) DinaIcon.PAUSE else DinaIcon.STOPWATCH, if (paused) DialMood.PAUSED else DialMood.RUNNING, compact)
+            Column(Modifier.padding(start = Dina.spacing.l - Dina.spacing.xxs).weight(1f)) {
                 Overline("Cronómetro" + (stopwatch.label?.let { " · $it" } ?: ""))
-                Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.clearAndSetSemantics { contentDescription = "Llevas ${spoken(elapsed)}" }) {
-                    Text(clock(elapsed), style = if (compact || elapsed >= 3_600_000L) Dina.type.numberSmall else Dina.type.number, color = c.ink, maxLines = 1)
-                    Text(",${elapsed % 1000 / 100}", Modifier.padding(bottom = 6.dp), style = Dina.type.heading, color = c.inkMuted)
-                }
-                Caption(if (paused) "En pausa" else "En marcha")
+                StopwatchReadout(stopwatch, now, compact)
+                if (paused) Chip("En pausa", Modifier.padding(top = Dina.spacing.xxs), DinaIcon.PAUSE, tone = CardTone.PLAIN)
+                else Caption("En marcha")
             }
         }
         Row(Modifier.fillMaxWidth().padding(top = Dina.spacing.m), horizontalArrangement = Arrangement.spacedBy(Dina.spacing.s), verticalAlignment = Alignment.CenterVertically) {
             DinaButton(
-                if (paused) "Continuar" else "Pausar",
+                if (paused) "Seguir" else "Pausar",
                 { execute(if (paused) StopwatchCommand.Resume(byId(stopwatch.id)) else StopwatchCommand.Pause(byId(stopwatch.id))) },
                 Modifier.weight(1f),
                 icon = (if (paused) DinaIcon.PLAY else DinaIcon.PAUSE).takeUnless { compact },
                 style = ButtonStyle.PRIMARY,
             )
             DinaButton("Reiniciar", { execute(StopwatchCommand.Reset(byId(stopwatch.id))) }, Modifier.weight(1f), icon = DinaIcon.REFRESH.takeUnless { compact })
-            RoundIconButton(DinaIcon.TRASH, "Borrar cronómetro", { execute(StopwatchCommand.Delete(byId(stopwatch.id))) }, style = ButtonStyle.DANGER)
+            RoundIconButton(DinaIcon.TRASH, "Borrar el cronómetro", { execute(StopwatchCommand.Delete(byId(stopwatch.id))) }, style = ButtonStyle.DANGER)
         }
+    }
+}
+
+/** Minutes, seconds and tenths: recomposes ten times a second, alone. */
+@Composable
+private fun StopwatchReadout(stopwatch: Stopwatch, now: State<Long>, compact: Boolean) {
+    val c = Dina.colors
+    val elapsed = stopwatch.elapsedAt(now.value)
+    val paused = stopwatch.status == StopwatchStatus.PAUSED
+    Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.clearAndSetSemantics { contentDescription = "Llevas ${spoken(elapsed)}" }) {
+        BigNumber(clock(elapsed), small = compact || elapsed >= 3_600_000L, color = if (paused) c.inkMuted else c.ink, modifier = Modifier.weight(1f, fill = false))
+        Text(",${elapsed % 1000 / 100}", Modifier.padding(bottom = Dina.spacing.s - Dina.spacing.xxs), style = Dina.type.heading, color = c.inkMuted)
     }
 }
 
@@ -427,45 +490,77 @@ fun ShoppingCard(items: List<ShoppingItem>, compact: Boolean = false) {
     val execute = rememberRunner()
     val c = Dina.colors
     var editing by remember { mutableStateOf<ShoppingItem?>(null) }
-    DinaCard(Modifier.animateContentSize()) {
+    DinaCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            SketchIcon(DinaIcon.CART, null, tint = c.accent, size = 20.dp)
-            Overline("Lista de la compra", Modifier.padding(start = 8.dp).weight(1f))
+            SketchIcon(DinaIcon.CART, null, tint = c.accent, size = Dina.sizes.icon)
+            Overline("Lista de la compra", Modifier.padding(start = Dina.spacing.iconGap).weight(1f))
             if (items.isNotEmpty()) Caption("${items.count { it.completed }} de ${items.size}")
         }
-        if (items.isEmpty()) {
-            Caption("La lista está vacía. Prueba a decir «añade leche».", Modifier.padding(top = 10.dp))
-        } else {
-            val visible = if (compact) items.take(4) else items
-            Column(Modifier.padding(top = 4.dp)) {
-                visible.forEach { item ->
-                    Row(Modifier.fillMaxWidth().heightIn(min = Dina.spacing.touch), verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            Modifier.size(Dina.spacing.touch).toggleable(item.completed, role = Role.Checkbox) { checked ->
-                                execute(if (checked) ShoppingCommand.Mark(byId(item.id)) else ShoppingCommand.Unmark(byId(item.id)))
-                            }.semantics { contentDescription = shoppingLabel(item) },
-                            contentAlignment = Alignment.Center,
-                        ) { SketchCheck(item.completed, color = c.accent, outline = c.inkMuted, mark = c.onAccent) }
-                        Text(
-                            shoppingLabel(item),
-                            Modifier.weight(1f).heightIn(min = Dina.spacing.touch).clickable(onClickLabel = "Editar") { editing = item }.padding(vertical = 12.dp),
-                            style = Dina.type.body,
-                            color = if (item.completed) c.inkMuted else c.ink,
-                            textDecoration = if (item.completed) TextDecoration.LineThrough else null,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        if (!compact) RoundIconButton(DinaIcon.CLOSE, "Quitar ${item.name}", { execute(ShoppingCommand.Remove(byId(item.id))) }, style = ButtonStyle.GHOST, size = 44.dp)
-                    }
-                }
-            }
-            if (compact && items.size > visible.size) Caption("+ ${items.size - visible.size} más en Mis cosas")
+        AnimatedVisibility(items.isEmpty(), enter = Dina.motion.enter(), exit = Dina.motion.exit()) {
+            Caption("Está vacía. Di «añade leche».", Modifier.padding(top = Dina.spacing.s + Dina.spacing.xxs))
         }
+        val visible = if (compact) items.take(4) else items
+        AnimatedColumn(visible, key = { it.id }, Modifier.padding(top = Dina.spacing.xs)) { item ->
+            ShoppingRow(item, compact, onToggle = { checked ->
+                execute(if (checked) ShoppingCommand.Mark(byId(item.id)) else ShoppingCommand.Unmark(byId(item.id)))
+            }, onEdit = { editing = item }, onRemove = { execute(ShoppingCommand.Remove(byId(item.id))) })
+        }
+        if (compact && items.size > visible.size) Caption("+ ${items.size - visible.size} más en Mis cosas")
     }
     editing?.let { item ->
         ShoppingEditDialog(item, onDismiss = { editing = null }) { name, quantity ->
             execute(ShoppingCommand.Update(byId(item.id), name = Patch(name), quantity = Patch(quantity)))
         }
+    }
+}
+
+/** One thing to buy: tick it off (a hand-drawn line crosses it out), tap it to edit, or remove it. */
+@Composable
+private fun ShoppingRow(item: ShoppingItem, compact: Boolean, onToggle: (Boolean) -> Unit, onEdit: () -> Unit, onRemove: () -> Unit) {
+    val c = Dina.colors
+    val motion = Dina.motion
+    val label = shoppingLabel(item)
+    val struck by animateFloatAsState(if (item.completed) 1f else 0f, motion.spring(motion.smooth), label = "strike")
+    val ink by animateColorAsState(if (item.completed) c.inkMuted else c.ink, motion.tween(motion.standard), label = "itemInk")
+    var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
+    val press = remember { MutableInteractionSource() }
+    Row(Modifier.fillMaxWidth().heightIn(min = Dina.spacing.touch), verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            Modifier.size(Dina.spacing.touch).toggleable(item.completed, role = Role.Checkbox, onValueChange = onToggle)
+                .semantics { contentDescription = label },
+            contentAlignment = Alignment.Center,
+        ) { SketchCheck(item.completed, color = c.accent, outline = c.lineStrong, mark = c.onAccent) }
+        Text(
+            label,
+            Modifier
+                .weight(1f)
+                .heightIn(min = Dina.spacing.touch)
+                .pressFeedback(press)
+                .clickable(press, indication = null, onClickLabel = "Editar", onClick = onEdit)
+                .padding(vertical = Dina.spacing.m)
+                .drawWithCache {
+                    // Crossed out by hand, drawn in as the box is ticked.
+                    val sk = Sketcher()
+                    val first = layout
+                    val y = if (first != null && first.lineCount > 0) (first.getLineTop(0) + first.getLineBottom(0)) / 2f else size.height / 2f
+                    val right = if (first != null && first.lineCount > 0) first.getLineRight(0) else size.width
+                    val line = Path()
+                    sk.begin().point(-2f * density, y + density).point(right * 0.5f, y - density * 0.6f).point(right + 2f * density, y + density * 0.4f)
+                        .jitter(0.6f * density, item.id.hashCode()).curve(false, 4)
+                    sk.brush(line, 1.8f * density, item.id.hashCode(), variation = 0.3f, taper = 0.5f, weight = 0f)
+                    onDrawWithContent {
+                        drawContent()
+                        val p = struck.coerceIn(0f, 1f)
+                        if (p > 0.01f) clipRect(right = (right + 4f * density) * p) { drawPath(line, c.inkMuted) }
+                    }
+                },
+            style = Dina.type.body,
+            color = ink,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            onTextLayout = { layout = it },
+        )
+        if (!compact) RoundIconButton(DinaIcon.CLOSE, "Quitar ${item.name}", onRemove, style = ButtonStyle.GHOST)
     }
 }
 
@@ -476,11 +571,11 @@ private fun ShoppingEditDialog(item: ShoppingItem, onDismiss: () -> Unit, onSave
     var quantity by rememberSaveable { mutableStateOf(item.quantity?.let { ToolPresentation.number(it) }.orEmpty()) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Editar elemento", style = Dina.type.heading, color = c.ink) },
+        title = { Text("Editar", style = Dina.type.heading, color = c.ink) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(Dina.spacing.s)) {
                 DinaTextField(
-                    name, { name = it }, "Elemento",
+                    name, { name = it }, "Qué hay que comprar",
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Next),
                 )
                 DinaTextField(
@@ -514,7 +609,7 @@ fun ShoppingComposer() {
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { add() }),
         )
-        RoundIconButton(DinaIcon.PLUS, "Añadir", add, style = ButtonStyle.PRIMARY, enabled = text.isNotBlank(), size = 52.dp)
+        RoundIconButton(DinaIcon.PLUS, "Añadir", add, style = ButtonStyle.PRIMARY, enabled = text.isNotBlank(), size = Dina.sizes.field)
     }
 }
 
@@ -524,8 +619,8 @@ fun VolumeCard() {
     var percent by remember { mutableFloatStateOf(tools.currentVolume().percent.toFloat()) }
     DinaCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            SketchIcon(DinaIcon.SPEAKER, null, tint = Dina.colors.accent, size = 20.dp)
-            Overline("Volumen multimedia", Modifier.padding(start = 8.dp).weight(1f))
+            SketchIcon(DinaIcon.SPEAKER, null, tint = Dina.colors.accent, size = Dina.sizes.icon)
+            Overline("Volumen multimedia", Modifier.padding(start = Dina.spacing.iconGap).weight(1f))
             Text("${percent.toInt()} %", style = Dina.type.heading, color = Dina.colors.ink)
         }
         DinaSlider(
@@ -542,11 +637,11 @@ fun VolumeCard() {
 fun ValueCard(label: String, value: String, icon: DinaIcon = DinaIcon.SPARK, detail: String? = null) {
     DinaCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            SketchIcon(icon, null, tint = Dina.colors.accent, size = 20.dp)
-            Overline(label, Modifier.padding(start = 8.dp))
+            SketchIcon(icon, null, tint = Dina.colors.accent, size = Dina.sizes.icon)
+            Overline(label, Modifier.padding(start = Dina.spacing.iconGap))
         }
-        detail?.let { Text("$it =", Modifier.padding(top = 6.dp), style = Dina.type.body, color = Dina.colors.inkMuted) }
-        Text(value, Modifier.padding(top = if (detail == null) 6.dp else 0.dp), style = Dina.type.display, color = Dina.colors.ink)
+        detail?.let { Text("$it =", Modifier.padding(top = Dina.spacing.s - Dina.spacing.xxs), style = Dina.type.body, color = Dina.colors.inkMuted) }
+        Text(value, Modifier.padding(top = if (detail == null) Dina.spacing.s - Dina.spacing.xxs else 0.dp), style = Dina.type.display, color = Dina.colors.ink)
     }
 }
 

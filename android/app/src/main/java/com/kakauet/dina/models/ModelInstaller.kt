@@ -41,7 +41,8 @@ class ModelInstaller(private val context: Context) {
         llmLabel: String,
         includeMoonshine: Boolean,
         voice: VoiceChoice = VoiceChoice.default,
-        onProgress: (String) -> Unit = {},
+        /** What is being copied, and the fraction of files already done. */
+        onProgress: (detail: String, done: Float) -> Unit = { _, _ -> },
     ): DinaModelFiles {
         val assets = buildList {
             add(ModelAsset(llm.assetPath, llm.fileName, llm.bytes, llmLabel))
@@ -78,7 +79,7 @@ class ModelInstaller(private val context: Context) {
             error("Espacio insuficiente: Dina necesita ${neededMb} MB libres y hay ${freeMb} MB")
         }
         assets.forEachIndexed { index, asset ->
-            onProgress("Copiando ${asset.label} · ${index + 1}/${assets.size}")
+            onProgress("Copiando ${asset.label} · ${index + 1}/${assets.size}", index.toFloat() / assets.size)
             copyAsset(asset.assetPath, File(targetRoot, asset.outputPath), asset.bytes,
                 refresh = asset.outputPath == WAKE_HEAD)
         }

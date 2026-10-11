@@ -16,6 +16,7 @@ import com.kakauet.dina.brain.EngineExecutor
 import com.kakauet.dina.DinaApplication
 import com.kakauet.dina.config.AppVariant
 import com.kakauet.dina.core.ConversationController
+import com.kakauet.dina.core.LoadStage
 import com.kakauet.dina.core.TurnOrigin
 import com.kakauet.dina.core.VoiceState
 import com.kakauet.dina.dina
@@ -27,6 +28,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
@@ -48,22 +50,27 @@ class DinaService : Service() {
     private val controller get() = graph.controller
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private var initialization: Job? = null
-    private var textJob: Job? = null
+    private val loads = SerialLoads(scope)
+
+    // The fields below are written only on the main thread: lifecycle, commands and the load's own
+    // steps run there (the heavy work inside a load runs on IO). @Volatile marks those that the voice
+    // pipeline or a background job also reads.
+    @Volatile private var textJob: Job? = null
     private var llm: NativeLlmEngine? = null
     private var stt: MoonshineStt? = null
     private var voice: SpeechVoice? = null
     private var polished: PolishedVoice? = null
     private var prewarm: Job? = null
     private var wake: WakeWordDetector? = null
-    private var pipeline: VoicePipeline? = null
+    @Volatile private var pipeline: VoicePipeline? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private var loadedMoonshine = false
+    /** What the load in progress was started with, until it ends. */
     private var initializingMoonshine: Boolean? = null
     /** What the loaded voice was built with: a different choice, thread count or provider reloads it. */
     private var loadedVoice: Triple<VoiceChoice, Int, OrtProvider>? = null
-    private var voiceEnabled = true
-    private var appVisible = true
+    @Volatile private var voiceEnabled = true
+    @Volatile private var appVisible = true
     private var benchmarkPending = false
     private val pendingText = ArrayDeque<String>()
 
@@ -76,7 +83,7 @@ class DinaService : Service() {
         startForeground(NOTIFICATION_ID, notification("Preparando Dina…"), ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
         updateWakeLock()
         scope.launch { store.session.map { it.state }.distinctUntilChanged().collect { updateNotification() } }
-        initialization = scope.launch { initialize() }
+        reload()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -115,10 +122,7 @@ class DinaService : Service() {
                 }
                 updateNotification()
             }
-            ACTION_RETRY -> if (initialization?.isActive != true) {
-                pipeline?.stopListening()
-                initialization = scope.launch { initialize() }
-            }
+            ACTION_RETRY -> if (!loads.isActive) reload()
             ACTION_APP_FOREGROUND -> {
                 appVisible = true
                 if (ready && mayListen()) pipeline?.startListening() else if (!voiceEnabled) pipeline?.stopListening()
@@ -149,9 +153,7 @@ class DinaService : Service() {
             (initializingMoonshine != null && initializingMoonshine != desiredMoonshine) ||
             (ready && loadedVoice != voiceSettings())
         if (modelsChanged) {
-            pipeline?.stopListening()
-            initialization?.cancel()
-            initialization = scope.launch { initialize() }
+            reload()
         } else if (!settings.dinaActive) {
             pipeline?.stopListening()
         } else if (mayListen() && (settings.moonshineStt || store.session.value.state == VoiceState.IDLE)) {
@@ -166,59 +168,85 @@ class DinaService : Service() {
 
     private fun voiceSettings() = Triple(settings.voice, settings.voiceThreads, settings.voiceProvider)
 
-    private suspend fun initialize() {
-        var stage = "preparar el almacenamiento"
+    /** Stops listening and loads the models again, after any load in progress has ended (see [SerialLoads]). */
+    private fun reload() {
+        pipeline?.stopListening()
         val useMoonshine = settings.moonshineStt
-        val spec = graph.brainSpec
         initializingMoonshine = useMoonshine
+        loads.launch(Dispatchers.Main) { initialize(useMoonshine) }
+    }
+
+    /**
+     * Runs on the main thread, so the service's fields are only written there; files and models
+     * load on IO. What it creates is owned by [LoadedResources] until it is published in one step
+     * (no suspension in between), so a cancelled or failed load closes it all.
+     */
+    private suspend fun initialize(useMoonshine: Boolean) {
+        var stage = "preparar el almacenamiento"
+        val spec = graph.brainSpec
+        val created = LoadedResources()
         try {
-            store.updateSession { it.copy(state = VoiceState.LOADING, detail = "Comprobando el almacenamiento…", ready = false, debugError = "") }
-            releaseModels()
+            store.updateSession { it.copy(debugError = "") }
+            store.setLoading(LoadStage.STORAGE, "Comprobando el almacenamiento…")
+            closeOffMain(detachModels())
             stage = "copiar los modelos locales"
             val (choice, voiceThreads, provider) = voiceSettings()
             val files = withContext(Dispatchers.IO) {
-                ModelInstaller(this@DinaService).install(spec.model, spec.displayName, includeMoonshine = useMoonshine, voice = choice) { detail ->
-                    store.setState(VoiceState.LOADING, detail)
+                ModelInstaller(this@DinaService).install(spec.model, spec.displayName, includeMoonshine = useMoonshine, voice = choice) { detail, done ->
+                    store.setLoading(LoadStage.COPY, detail, done)
                 }
             }
             val loadStart = System.nanoTime()
             stage = "cargar ${spec.displayName}"
-            store.setState(VoiceState.LOADING, "Cargando ${spec.displayName}…")
+            store.setLoading(LoadStage.BRAIN, "Cargando ${spec.displayName}…")
             val llmThreads = settings.llmThreads
-            val engine = NativeLlmEngine().also { llm = it }
+            // Registered as soon as it exists: a cancelled load closes it when the native call returns.
+            val engine = created.own(NativeLlmEngine())
             engine.load(files.llm.absolutePath, llmThreads, spec.model.contextSize)
-            val loadedStt = if (!useMoonshine) null else withContext(Dispatchers.IO) {
+            val loadedStt = if (!useMoonshine) null else {
                 stage = "cargar Moonshine Spanish Base"
-                store.setState(VoiceState.LOADING, "Cargando Moonshine Spanish Base…")
-                MoonshineStt(files)
-            }.also { stt = it }
+                store.setLoading(LoadStage.EAR, "Cargando Moonshine Spanish Base…")
+                withContext(Dispatchers.IO) { created.own(MoonshineStt(files)) }
+            }
             stage = "cargar la voz ${choice.label}"
-            store.setState(VoiceState.LOADING, "Cargando la voz ${choice.label}…")
+            store.setLoading(LoadStage.VOICE, "Cargando la voz ${choice.label}…")
             val speechVoice = withContext(Dispatchers.IO) {
-                when (choice) {
-                    VoiceChoice.SUPERTONIC_F2 -> SupertonicVoice(files.supertonic, "F2", voiceThreads, provider, settings.supertonicSteps)
-                    VoiceChoice.PIPER_SHARVARD -> PiperVoice(this@DinaService, files)
-                }
-            }.also { voice = it }
+                created.own(
+                    when (choice) {
+                        VoiceChoice.SUPERTONIC_F2 -> SupertonicVoice(files.supertonic, "F2", voiceThreads, provider, settings.supertonicSteps)
+                        VoiceChoice.PIPER_SHARVARD -> PiperVoice(this@DinaService, files)
+                    },
+                )
+            }
             stage = "cargar el detector de «Dina»"
-            store.setState(VoiceState.LOADING, "Cargando el detector de «Dina»…")
-            val loadedWake = withContext(Dispatchers.IO) { WakeWordDetector(files) }.also { wake = it }
-            controller.attach(spec.create(engine, EngineExecutor(graph.tools)))
+            store.setLoading(LoadStage.WAKE, "Cargando el detector de «Dina»…")
+            val loadedWake = withContext(Dispatchers.IO) { created.own(WakeWordDetector(files)) }
+
+            // Published in one step, with no suspension point: from here on the service owns everything.
+            stage = "preparar la escucha"
             // The pipeline hears the finished voice: silence cut, sentences cached on disk (cacheDir/speech).
-            val finishedVoice = PolishedVoice(speechVoice, SilenceTrim.Config(), LruSpeechCache(directory = File(cacheDir, "speech"))).also { polished = it }
+            val finishedVoice = PolishedVoice(speechVoice, SilenceTrim.Config(), LruSpeechCache(directory = File(cacheDir, "speech")))
+            created.handOff()
+            llm = engine; stt = loadedStt; voice = speechVoice; polished = finishedVoice; wake = loadedWake
+            controller.attach(spec.create(engine, EngineExecutor(graph.tools)))
             pipeline = VoicePipeline(this, settings, store, controller, loadedStt, finishedVoice, loadedWake, scope, ::mayListen)
             loadedMoonshine = useMoonshine
+            initializingMoonshine = null
             loadedVoice = Triple(choice, voiceThreads, provider)
-            store.updateSession { it.copy(state = VoiceState.IDLE, detail = VoiceState.IDLE.label, ready = true) }
-            store.updateMetrics {
-                it.copy(
-                    modelLoadMs = (System.nanoTime() - loadStart) / 1_000_000.0,
-                    sttInitMs = loadedStt?.initMs, ttsInitMs = speechVoice.initMs, ttsWarmupMs = speechVoice.warmupMs,
-                    ramMb = DeviceStats.memoryMb(), cpuTemperatureC = DeviceStats.temperatureC(), modelBytes = files.llm.length(),
-                    backend = "llama.cpp CPU · LFM2.5 · ARM64 KleidiAI · $llmThreads hilos",
-                    variant = "${AppVariant.label} · ${spec.displayName} (${spec.model.quantization}) · ${AppVariant.fastCores} de ${AppVariant.cores} núcleos rápidos",
-                    voice = "${finishedVoice.description} · $voiceThreads hilos",
-                )
+            store.updateSession { it.copy(state = VoiceState.IDLE, detail = VoiceState.IDLE.label, ready = true, loadProgress = 1f) }
+            val modelLoadMs = (System.nanoTime() - loadStart) / 1_000_000.0
+            // Off the main thread: Debug.getMemoryInfo reads /proc/<pid>/smaps.
+            scope.launch {
+                store.updateMetrics {
+                    it.copy(
+                        modelLoadMs = modelLoadMs,
+                        sttInitMs = loadedStt?.initMs, ttsInitMs = speechVoice.initMs, ttsWarmupMs = speechVoice.warmupMs,
+                        ramMb = DeviceStats.memoryMb(), cpuTemperatureC = DeviceStats.temperatureC(), modelBytes = files.llm.length(),
+                        backend = "llama.cpp CPU · LFM2.5 · ARM64 KleidiAI · $llmThreads hilos",
+                        variant = "${AppVariant.label} · ${spec.displayName} (${spec.model.quantization}) · ${AppVariant.fastCores} de ${AppVariant.cores} núcleos rápidos",
+                        voice = "${finishedVoice.description} · $voiceThreads hilos",
+                    )
+                }
             }
             if (mayListen()) pipeline?.startListening()
             if (benchmarkPending) runBenchmark()
@@ -229,9 +257,12 @@ class DinaService : Service() {
                 finishedVoice.prewarm(CommonPhrases.ALL) { !isActive || store.session.value.state != VoiceState.IDLE || turnInProgress }
             }
         } catch (cancelled: CancellationException) {
+            closeOffMain(created)
             throw cancelled
         } catch (error: Throwable) {
-            releaseModels()
+            closeOffMain(created)
+            closeOffMain(detachModels())
+            initializingMoonshine = null
             val reason = error.message?.lineSequence()?.firstOrNull()?.take(140).orEmpty()
             Log.e(TAG, "Fallo al $stage", error)
             store.updateSession {
@@ -242,8 +273,6 @@ class DinaService : Service() {
                     debugError = error.stackTraceToString(),
                 )
             }
-        } finally {
-            if (initializingMoonshine == useMoonshine) initializingMoonshine = null
         }
     }
 
@@ -268,17 +297,23 @@ class DinaService : Service() {
         pipeline?.runBenchmark()
     }
 
-    private fun releaseModels() {
+    /**
+     * Takes the loaded models away from the service (main thread) and returns them for the caller to close.
+     * They close newest first: pipeline, detector, voice, Moonshine and llama.cpp. Closing the finished
+     * voice waits for a sentence being synthesized (the background prewarm) to end.
+     */
+    private fun detachModels(): LoadedResources {
         controller.attach(null)
         prewarm?.cancel(); prewarm = null
-        runCatching { pipeline?.close() }; pipeline = null
-        runCatching { wake?.close() }; wake = null
-        // Closing the finished voice waits for a sentence being synthesized (the background prewarm) to end.
-        runCatching { (polished ?: voice)?.close() }; polished = null; voice = null
-        runCatching { stt?.close() }; stt = null
+        val detached = LoadedResources()
+        listOfNotNull(llm, stt, polished ?: voice, wake, pipeline).forEach { detached.own(it) }
+        pipeline = null; wake = null; polished = null; voice = null; stt = null; llm = null
         loadedVoice = null
-        runCatching { llm?.close() }; llm = null
+        return detached
     }
+
+    /** Closes on IO even when the load was cancelled. */
+    private suspend fun closeOffMain(resources: LoadedResources) = withContext(NonCancellable + Dispatchers.IO) { resources.close() }
 
     private fun notification(text: String): Notification {
         val open = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
@@ -314,8 +349,9 @@ class DinaService : Service() {
     }
 
     override fun onDestroy() {
-        textJob?.cancel(); initialization?.cancel()
-        releaseModels()
+        // A load in progress closes what it created itself (LoadedResources); only published models are closed here.
+        textJob?.cancel(); loads.cancel()
+        detachModels().close()
         DinaTools.flush()
         if (wakeLock?.isHeld == true) wakeLock?.release()
         scope.cancel()

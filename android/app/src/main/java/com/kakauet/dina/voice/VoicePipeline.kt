@@ -64,15 +64,19 @@ class VoicePipeline(
     private val mainHandler = Handler(Looper.getMainLooper())
     private val vad = FastVad()
     private val wakeDecision = WakeDecision()
-    private var recorder: AudioRecord? = null
-    private var audioJob: Job? = null
-    private var turnJob: Job? = null
+    // Threads: the audio loop (IO), the main thread (service commands, SpeechRecognizer callbacks) and
+    // turns (Default). The microphone is opened and released under the pipeline's monitor
+    // ([startListening], [stopAudioLoop]); the loop itself only reads @Volatile fields, never locks.
+    @Volatile private var recorder: AudioRecord? = null
+    @Volatile private var audioJob: Job? = null
+    @Volatile private var turnJob: Job? = null
+    @Volatile private var followDeadlineNs = 0L
+    @Volatile private var activationDeadlineNs = 0L
+    // Main thread only: the Android recognizer.
     private var nativeRecognizer: SpeechRecognizer? = null
     private var nativeGeneration = 0L
     private var nativeStartedNs = 0L
     private var nativeSpeechEndNs = 0L
-    private var followDeadlineNs = 0L
-    private var activationDeadlineNs = 0L
     private val focusRequest by lazy {
         AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
             .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ASSISTANT).build())
@@ -86,6 +90,7 @@ class VoicePipeline(
     val wakeDiagnostics get() = diagnostics
 
     /** Starts waiting for "Dina" (or for speech, in Moonshine follow-up). */
+    @Synchronized
     fun startListening() {
         if (audioJob?.isActive == true) return
         if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
@@ -159,7 +164,12 @@ class VoicePipeline(
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Throwable) {
+                Log.w(TAG, "Benchmark failed", error)
+                store.updateSession { it.copy(debugError = "${error.javaClass.simpleName}: ${error.message.orEmpty()}") }
                 store.setState(VoiceState.ERROR, "No he podido medir la respuesta: ${error.message}")
+                // Shown for a moment, then back to waiting for "Dina": in ERROR the microphone loop does nothing.
+                delay(ERROR_PAUSE_MS)
+                endSession()
             }
         }
     }
@@ -310,7 +320,7 @@ class VoicePipeline(
             )
         }
         store.setState(VoiceState.ERROR, "No he podido completarlo. Inténtalo otra vez.")
-        delay(1_500)
+        delay(ERROR_PAUSE_MS)
         openFollowUp()
     }
 
@@ -329,12 +339,15 @@ class VoicePipeline(
     private fun activeDeadline(): Long =
         if (store.session.value.state == VoiceState.FOLLOW_UP) followDeadlineNs else activationDeadlineNs
 
+    /** Callable from the loop itself: it reads a null recorder next and stops. */
+    @Synchronized
     private fun stopAudioLoop() {
         audioJob?.cancel()
         audioJob = null
-        recorder?.runCatching { stop() }
-        recorder?.release()
+        val record = recorder
         recorder = null
+        record?.runCatching { stop() }
+        record?.release()
         vad.reset(); wake.reset(); wakeDecision.reset()
     }
 
@@ -476,6 +489,8 @@ class VoicePipeline(
     private companion object {
         const val SAMPLE_RATE = 16_000
         const val TAG = "DinaVoice"
+        /** How long a failed turn or measurement shows its error before Dina listens again. */
+        const val ERROR_PAUSE_MS = 1_500L
         /** Diagnóstico's measurement: a real request that runs a tool and speaks one short sentence. */
         const val BENCHMARK_PHRASE = "¿Qué hora es?"
     }

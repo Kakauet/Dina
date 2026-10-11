@@ -63,6 +63,8 @@ internal class BroteRig : Rig() {
     /** Leaves in their own frame: base at the origin, pointing along +x. */
     private val leafFill = Array(2) { boilPaths() }
     private val leafInk = Array(2) { boilPaths() }
+    private var beanSpan = emptyArray<HatchSpan>()
+    private var leafSpan = emptyArray<Array<HatchSpan>>()
 
     override fun prepare(f: Frame) {
         val sk = f.sk
@@ -77,6 +79,8 @@ internal class BroteRig : Rig() {
             sk.fill(beanLight[b])
             for (i in 0..1) leaf(f, LEAVES[i * 2], LEAVES[i * 2 + 1], 3 + i, leafFill[i][b], leafInk[i][b])
         }
+        beanSpan = Array(BOIL_FRAMES) { HatchSpan(beanFill[it]) }
+        leafSpan = Array(2) { i -> Array(BOIL_FRAMES) { HatchSpan(leafFill[i][it]) } }
     }
 
     private fun bean(f: Frame): Sketcher {
@@ -119,18 +123,19 @@ internal class BroteRig : Rig() {
         val stem = f.path()
         f.sk.brush(stem, f.ink * 1.05f, f.seed(2), taper = 0.25f, weight = 0f)
         drawPath(stem, c.ink)
-        val angles = floatArrayOf(-150f + 30f * pose.perk + 12f * pose.wiggle, -30f - 30f * pose.perk - 12f * pose.wiggle)
         for (i in 0..1) {
-            val a = angles[i] * DEG
+            val angle = if (i == 0) -150f + 30f * pose.perk + 12f * pose.wiggle else -30f - 30f * pose.perk - 12f * pose.wiggle
+            val a = angle * DEG
             // Keep the off-register fill offset pointing down-right on screen.
             val mx = f.misX * 0.6f * cos(a) + f.misY * 0.6f * sin(a)
             val my = -f.misX * 0.6f * sin(a) + f.misY * 0.6f * cos(a)
-            rotated(ax, ay, angles[i]) {
-                riso(f, leafFill[i][b], c.leaf, c.leafShade, dx = mx, dy = my)
+            val span = leafSpan[i][b]
+            rotated(ax, ay, angle) {
+                riso(f, leafFill[i][b], c.leaf, c.leafShade, dx = mx, dy = my, light = span.light, dark = span.dark)
                 drawPath(leafInk[i][b], c.ink)
             }
         }
-        riso(f, beanFill[b], c.body, c.bodyShade)
+        riso(f, beanFill[b], c.body, c.bodyShade, light = beanSpan[b].light, dark = beanSpan[b].dark)
         drawPath(beanLight[b], c.bodyLight, alpha = 0.85f)
         drawPath(beanInk[b], c.ink)
     }
@@ -171,7 +176,8 @@ internal class MusgoRig : Rig() {
         val sk = f.sk
         for (b in 0 until BOIL_FRAMES) {
             f.boil = b
-            for ((i, s) in SIDES.withIndex()) {
+            for (i in 0..1) {
+                val s = SIDES[i]
                 footFill[i][b].rewind(); footInk[i][b].rewind(); armFill[i][b].rewind(); armInk[i][b].rewind()
                 sk.ellipse(f.u(0.5f + s * 0.105f), f.u(0.855f), f.u(0.062f), f.u(0.034f), 7, phase = s.toFloat()).jitter(f.jitter * 0.5f, f.seed(10 + s)).curve(true, 5)
                 sk.fill(footFill[i][b])
@@ -192,7 +198,8 @@ internal class MusgoRig : Rig() {
         val c = f.colors
         val sk = f.sk
         val b = f.boil
-        for ((i, s) in SIDES.withIndex()) {
+        for (i in 0..1) {
+            val s = SIDES[i]
             riso(f, footFill[i][b], c.leafShade.copy(alpha = 0.9f * c.leafShade.alpha), c.ink, textured = false)
             drawPath(footInk[i][b], c.ink)
             // The right arm bobs when she is happy and rises to wave hello.
@@ -219,7 +226,9 @@ internal class MusgoRig : Rig() {
         fluff(f, amp, f.seed(20))
         val fill = f.path()
         sk.fill(fill)
-        riso(f, fill, c.leaf, c.leafShade)
+        // Built every frame: its bounds come from the circle it bristles around, not from measuring it.
+        val reach = f.u(0.272f) * (1f + amp * 2.7f)
+        riso(f, fill, c.leaf, c.leafShade, light = Offset(f.u(0.5f), f.u(0.585f)), dark = Offset(f.u(0.5f) + reach, f.u(0.585f) + reach))
         drawPath(belly[b], c.belly, alpha = 0.9f)
         drawPath(light[b], c.bodyLight, alpha = 0.7f)
         fluff(f, amp, f.seed(21))

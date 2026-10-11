@@ -1,8 +1,8 @@
 package com.kakauet.dina.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -25,37 +26,50 @@ import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.kakauet.dina.core.VoiceState
+import com.kakauet.dina.ui.character.DinaCharacter
 import com.kakauet.dina.ui.character.Sketcher
 import com.kakauet.dina.ui.theme.Dina
 
@@ -66,13 +80,14 @@ enum class CardTone { PLAIN, ACCENT, WARM }
 fun DinaCard(
     modifier: Modifier = Modifier,
     tone: CardTone = CardTone.PLAIN,
-    padding: PaddingValues = PaddingValues(horizontal = 18.dp, vertical = 16.dp),
+    padding: PaddingValues = PaddingValues(horizontal = Dina.spacing.cardX, vertical = Dina.spacing.cardY),
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val c = Dina.colors
+    val motion = Dina.motion
     val fill by animateColorAsState(
         when (tone) { CardTone.PLAIN -> c.surface; CardTone.ACCENT -> c.accentSoft; CardTone.WARM -> c.warmSoft },
-        tween(Dina.motion.ms(Dina.motion.standard)), label = "card",
+        motion.tween(motion.standard), label = "card",
     )
     Column(
         modifier
@@ -90,7 +105,30 @@ fun Overline(text: String, modifier: Modifier = Modifier, color: Color = Dina.co
 
 @Composable
 fun Caption(text: String, modifier: Modifier = Modifier, color: Color = Dina.colors.inkMuted, textAlign: TextAlign? = null, maxLines: Int = Int.MAX_VALUE) {
-    Text(text, modifier, style = Dina.type.caption, color = color, textAlign = textAlign, maxLines = maxLines)
+    Text(text, modifier, style = Dina.type.caption, color = color, textAlign = textAlign, maxLines = maxLines, overflow = TextOverflow.Ellipsis)
+}
+
+/** A note under a card or control, lined up with the text inside the cards. */
+@Composable
+fun Hint(text: String, modifier: Modifier = Modifier) {
+    Caption(text, modifier.padding(horizontal = Dina.spacing.cardX))
+}
+
+/**
+ * One line that shrinks its font (down to [minSize]) instead of wrapping or clipping: pills,
+ * big numbers. [color] is read when drawing, so it can animate without recomposing.
+ */
+@Composable
+fun FitText(text: String, style: TextStyle, color: () -> Color, modifier: Modifier = Modifier, minSize: TextUnit = Dina.type.fitMin) {
+    BasicText(
+        text,
+        modifier,
+        style = style,
+        maxLines = 1,
+        softWrap = false,
+        color = color,
+        autoSize = TextAutoSize.StepBased(minFontSize = minSize, maxFontSize = style.fontSize, stepSize = 0.5.sp),
+    )
 }
 
 enum class ButtonStyle { PRIMARY, SECONDARY, WARM, DANGER, GHOST }
@@ -100,7 +138,7 @@ private class ButtonColors(val fill: Color, val content: Color, val shadow: Colo
 @Composable
 private fun buttonColors(style: ButtonStyle, enabled: Boolean): ButtonColors {
     val c = Dina.colors
-    if (!enabled) return ButtonColors(c.surfaceAlt, c.inkMuted, null, c.line)
+    if (!enabled) return ButtonColors(c.surfaceAlt, c.inkMuted, null, c.lineStrong)
     return when (style) {
         ButtonStyle.PRIMARY -> ButtonColors(c.accent, c.onAccent, c.ink.copy(alpha = if (c.isDark) 0.5f else 0.85f), null)
         ButtonStyle.SECONDARY -> ButtonColors(c.surface, c.ink, c.shadow, c.line)
@@ -124,17 +162,18 @@ fun DinaButton(
     enabled: Boolean = true,
 ) {
     val colors = buttonColors(style, enabled)
-    PressableSurface(onClick, colors, modifier.heightIn(min = Dina.spacing.touch), enabled, radius = 24.dp, role = Role.Button) {
+    PressableSurface(onClick, colors, modifier.heightIn(min = Dina.spacing.touch), enabled, radius = Dina.shapes.buttonRadius, role = Role.Button) {
         Row(
-            Modifier.padding(horizontal = 18.dp, vertical = 11.dp),
+            Modifier.padding(horizontal = Dina.spacing.l, vertical = Dina.spacing.s),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (icon != null) {
-                SketchIcon(icon, null, tint = colors.content, size = 20.dp)
-                Spacer(Modifier.width(8.dp))
+                SketchIcon(icon, null, tint = colors.content, size = Dina.sizes.icon)
+                Spacer(Modifier.width(Dina.spacing.iconGap))
             }
-            Text(text, style = Dina.type.label, color = colors.content, textAlign = TextAlign.Center)
+            // One line that shrinks with large fonts, rather than breaking a word in two.
+            FitText(text, Dina.type.label, { colors.content })
         }
     }
 }
@@ -148,7 +187,7 @@ fun RoundIconButton(
     modifier: Modifier = Modifier,
     style: ButtonStyle = ButtonStyle.SECONDARY,
     enabled: Boolean = true,
-    size: Dp = 48.dp,
+    size: Dp = Dina.spacing.touch,
 ) {
     val colors = buttonColors(style, enabled)
     PressableSurface(onClick, colors, modifier.size(size).semantics { this.contentDescription = contentDescription }, enabled, radius = size / 2, role = Role.Button) {
@@ -166,25 +205,28 @@ private fun PressableSurface(
     role: Role,
     content: @Composable BoxScope.() -> Unit,
 ) {
+    val motion = Dina.motion
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val press by animateFloatAsState(if (pressed && enabled) 1f else 0f, tween(Dina.motion.ms(90)), label = "press")
+    // Read in the layer, so pressing never recomposes the button.
+    val press by animateFloatAsState(if (pressed && enabled) 1f else 0f, motion.spring(motion.snappy), label = "press")
     val shadow = colors.shadow
+    val depth = Dina.sizes.shadowOffset
     Box(
         modifier
             .then(
-                if (shadow == null) Modifier else remember(shadow, radius) {
+                if (shadow == null) Modifier else remember(shadow, radius, depth) {
                     Modifier.drawWithCache {
                         val sk = Sketcher()
                         val path = Path().also { sk.fill(it, sk.roundRect(size.width, size.height, radius.toPx(), density, seed = 21)) }
-                        val offset = 3.dp.toPx()
+                        val offset = depth.toPx()
                         onDrawBehind { translate(offset, offset) { drawPath(path, shadow) } }
                     }
                 },
             )
             .clickable(interaction, indication = null, enabled = enabled, role = role, onClick = onClick)
             .graphicsLayer {
-                val offset = 3.dp.toPx() * press
+                val offset = depth.toPx() * press
                 translationX = offset
                 translationY = offset
             }
@@ -205,16 +247,18 @@ fun ActionRow(vararg actions: Action, modifier: Modifier = Modifier, compact: Bo
     }
 }
 
-/** Two or three options in a pill; a sliding marker shows the selected one. */
+/** Two or three options in a pill; a sliding marker shows the selected one. Labels shrink rather than wrap. */
 @Composable
 fun PillSwitch(options: List<Pair<String, DinaIcon?>>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
     val c = Dina.colors
-    val position by animateFloatAsState(selected.toFloat(), tween(Dina.motion.ms(Dina.motion.standard)), label = "pill")
+    val motion = Dina.motion
+    val position by animateFloatAsState(selected.toFloat(), motion.spring(motion.snappy), label = "pill")
     val marker = c.accent
+    val inset = Dina.spacing.xs
     Row(
         modifier
-            .sketchBackground(c.surfaceAlt, c.line, shadow = null, radius = 30.dp, seed = 31)
-            .padding(4.dp)
+            .sketchBackground(c.surfaceAlt, c.line, shadow = null, radius = Dina.shapes.buttonRadius + inset, seed = 31)
+            .padding(inset)
             .then(
                 remember(marker, options.size) {
                     Modifier.drawWithCache {
@@ -229,42 +273,43 @@ fun PillSwitch(options: List<Pair<String, DinaIcon?>>, selected: Int, onSelect: 
     ) {
         options.forEachIndexed { index, (label, icon) ->
             val active = index == selected
-            val tint by animateColorAsState(if (active) c.onAccent else c.ink, tween(Dina.motion.ms(Dina.motion.standard)), label = "pillText")
+            val tint by animateColorAsState(if (active) c.onAccent else c.ink, motion.tween(motion.standard), label = "pillText")
             Row(
                 Modifier
                     .weight(1f)
-                    .heightIn(min = 44.dp)
+                    .heightIn(min = Dina.spacing.touch - inset * 2)
                     .selectable(active, role = Role.Tab, onClick = { onSelect(index) })
-                    .padding(horizontal = 12.dp),
+                    .padding(horizontal = Dina.spacing.s),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (icon != null) {
-                    SketchIcon(icon, null, tint = tint, size = 20.dp)
-                    Spacer(Modifier.width(6.dp))
+                    SketchIcon(icon, null, tint = tint, size = Dina.sizes.icon)
+                    Spacer(Modifier.width(Dina.spacing.iconGap - Dina.spacing.xxs))
                 }
-                Text(label, style = Dina.type.label, color = tint)
+                FitText(label, Dina.type.label, { tint })
             }
         }
     }
 }
 
-/** Speech bubble; Dina's are outlined cream, yours are sage. */
+/** Speech bubble; Dina's are outlined cream, yours are sage. Room is left for the tail. */
 @Composable
 fun SpeechBubble(mine: Boolean, tail: Tail, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     val c = Dina.colors
+    val tailRoom = Dina.spacing.m
     Column(
         modifier
-            .padding(top = if (tail == Tail.TOP_START) 11.dp else 0.dp, bottom = if (tail == Tail.BOTTOM_START || tail == Tail.BOTTOM_END) 11.dp else 0.dp)
+            .padding(top = if (tail == Tail.TOP_START) tailRoom else 0.dp, bottom = if (tail == Tail.BOTTOM_START || tail == Tail.BOTTOM_END) tailRoom else 0.dp)
             .sketchBackground(
                 fill = if (mine) c.userBubble else c.dinaBubble,
                 outline = c.line,
                 shadow = if (mine) null else c.shadow,
-                radius = 22.dp,
+                radius = Dina.shapes.bubbleRadius,
                 tail = tail,
                 seed = if (mine) 41 else 42,
             )
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = Dina.spacing.l - Dina.spacing.xxs, vertical = Dina.spacing.m),
         content = content,
     )
 }
@@ -286,7 +331,7 @@ fun DinaTextField(
     BasicTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = modifier.heightIn(min = 52.dp).semantics { contentDescription = label },
+        modifier = modifier.heightIn(min = Dina.sizes.field).semantics { contentDescription = label },
         singleLine = singleLine,
         maxLines = maxLines,
         textStyle = Dina.type.body.copy(color = c.ink),
@@ -296,11 +341,12 @@ fun DinaTextField(
         decorationBox = { field ->
             Box(
                 Modifier
-                    .sketchBackground(c.dinaBubble, c.line, shadow = null, radius = 24.dp, seed = 51)
-                    .padding(horizontal = 18.dp, vertical = 14.dp),
+                    .heightIn(min = Dina.sizes.field)
+                    .sketchBackground(c.dinaBubble, c.lineStrong, shadow = null, radius = Dina.shapes.buttonRadius, seed = 51)
+                    .padding(horizontal = Dina.spacing.l, vertical = Dina.spacing.m),
                 contentAlignment = Alignment.CenterStart,
             ) {
-                if (value.isEmpty()) Text(placeholder, style = Dina.type.body, color = c.inkMuted)
+                if (value.isEmpty()) Text(placeholder, style = Dina.type.body, color = c.inkMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 field()
             }
         },
@@ -310,23 +356,26 @@ fun DinaTextField(
 @Composable
 fun SectionHeader(title: String, modifier: Modifier = Modifier, icon: DinaIcon? = null, count: Int? = null) {
     Row(
-        modifier.fillMaxWidth().padding(top = Dina.spacing.m, bottom = Dina.spacing.xs).heightIn(min = 44.dp),
+        modifier.fillMaxWidth().padding(top = Dina.spacing.m, bottom = Dina.spacing.xs).heightIn(min = Dina.spacing.touch),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) {
-            SketchIcon(icon, null, tint = Dina.colors.accent, size = 22.dp)
-            Spacer(Modifier.width(10.dp))
+            SketchIcon(icon, null, tint = Dina.colors.accent, size = Dina.sizes.iconLarge)
+            Spacer(Modifier.width(Dina.spacing.iconGap + Dina.spacing.xxs))
         }
         Text(title, Modifier.weight(1f).semantics { heading() }, style = Dina.type.heading, color = Dina.colors.ink)
-        if (count != null && count > 0) Badge(count.toString())
+        AnimatedVisibility(count != null && count > 0, enter = Dina.motion.enter(), exit = Dina.motion.exit()) {
+            Badge((count ?: 0).toString())
+        }
     }
 }
 
 @Composable
 fun Badge(text: String, modifier: Modifier = Modifier) {
     Box(
-        modifier.sizeIn(minWidth = 30.dp).sketchBackground(Dina.colors.accentSoft, null, null, radius = 14.dp, seed = 61)
-            .padding(horizontal = 10.dp, vertical = 4.dp),
+        modifier.sizeIn(minWidth = Dina.sizes.iconLarge + Dina.spacing.xs)
+            .sketchBackground(Dina.colors.accentSoft, null, null, radius = Dina.shapes.chipRadius, seed = 61)
+            .padding(horizontal = Dina.spacing.s, vertical = Dina.spacing.xxs),
         contentAlignment = Alignment.Center,
     ) { Text(text, style = Dina.type.label, color = Dina.colors.onAccentSoft) }
 }
@@ -336,40 +385,68 @@ fun Badge(text: String, modifier: Modifier = Modifier) {
 fun Chip(text: String, modifier: Modifier = Modifier, icon: DinaIcon? = null, tone: CardTone = CardTone.ACCENT) {
     val c = Dina.colors
     val fill = when (tone) { CardTone.PLAIN -> c.surfaceAlt; CardTone.ACCENT -> c.accentSoft; CardTone.WARM -> c.warmSoft }
-    val ink = if (tone == CardTone.WARM) c.onWarm else c.onAccentSoft
+    val ink = when (tone) { CardTone.PLAIN -> c.inkMuted; CardTone.ACCENT -> c.onAccentSoft; CardTone.WARM -> c.onWarm }
     Row(
-        modifier.sketchBackground(fill, null, null, radius = 14.dp, seed = 62).padding(horizontal = 10.dp, vertical = 5.dp),
+        modifier.sketchBackground(fill, null, null, radius = Dina.shapes.chipRadius, seed = 62)
+            .padding(horizontal = Dina.spacing.s + Dina.spacing.xxs, vertical = Dina.spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) {
-            SketchIcon(icon, null, tint = ink, size = 15.dp)
-            Spacer(Modifier.width(5.dp))
+            SketchIcon(icon, null, tint = ink, size = Dina.sizes.iconSmall)
+            Spacer(Modifier.width(Dina.spacing.xs))
         }
         Text(text, style = Dina.type.caption, color = ink)
     }
 }
 
+/**
+ * Hand-drawn switch: a wobbly track and a thumb that springs across. With [onCheckedChange] =
+ * null it only shows the state (the whole row toggles, see [ToggleRow]).
+ */
 @Composable
 fun DinaSwitch(checked: Boolean, onCheckedChange: ((Boolean) -> Unit)?, modifier: Modifier = Modifier) {
     val c = Dina.colors
-    Switch(
-        checked = checked,
-        onCheckedChange = onCheckedChange,
-        modifier = modifier,
-        colors = SwitchDefaults.colors(
-            checkedThumbColor = c.onAccent,
-            checkedTrackColor = c.accent,
-            checkedBorderColor = c.accent,
-            uncheckedThumbColor = c.inkMuted,
-            uncheckedTrackColor = c.surfaceAlt,
-            uncheckedBorderColor = c.inkMuted,
-        ),
+    val motion = Dina.motion
+    val position by animateFloatAsState(if (checked) 1f else 0f, motion.spring(motion.snappy), label = "switch")
+    val track by animateColorAsState(if (checked) c.accent else c.surfaceAlt, motion.tween(motion.standard), label = "switchTrack")
+    val thumb by animateColorAsState(if (checked) c.onAccent else c.lineStrong, motion.tween(motion.standard), label = "switchThumb")
+    val outline by animateColorAsState(if (checked) c.accent else c.lineStrong, motion.tween(motion.standard), label = "switchLine")
+    val interactive = if (onCheckedChange == null) Modifier else
+        Modifier.minimumInteractiveComponentSize().toggleable(checked, role = Role.Switch, onValueChange = onCheckedChange)
+    Spacer(
+        modifier.then(interactive).size(Dina.sizes.switchWidth, Dina.sizes.switchHeight).drawWithCache {
+            val sk = Sketcher()
+            val h = size.height
+            val line = sk.roundRect(size.width, h, h / 2f, density, seed = 71)
+            val body = Path().also { sk.fill(it, line) }
+            val ink = Path().also { sk.brush(it, 1.5f * density, 72, line, variation = 0.3f, weight = 0.5f) }
+            val r = h * 0.34f
+            val dot = Path().also { sk.fill(it, sk.circle(0f, 0f, r, r * 0.05f, 73, points = 9)) }
+            val travel = size.width - h
+            onDrawBehind {
+                drawPath(body, track)
+                drawPath(ink, outline)
+                val p = position
+                translate(h / 2f + travel * p, h / 2f) {
+                    // The thumb grows a little when on, like a pressed sticker.
+                    scale(0.82f + 0.18f * p.coerceIn(0f, 1f), pivot = Offset.Zero) { drawPath(dot, thumb) }
+                }
+            }
+        },
     )
 }
 
+/** Slider with a hand-drawn track (inked up to the value) and a sticker thumb; Material handles touch and accessibility. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DinaSlider(value: Float, onValueChange: (Float) -> Unit, range: ClosedFloatingPointRange<Float>, modifier: Modifier = Modifier, steps: Int = 0, onValueChangeFinished: (() -> Unit)? = null) {
     val c = Dina.colors
+    val motion = Dina.motion
+    val interaction = remember { MutableInteractionSource() }
+    val dragging by interaction.collectIsPressedAsState()
+    val grab by animateFloatAsState(if (dragging) 1f else 0f, motion.spring(motion.snappy), label = "grab")
+    // One state object for the whole life of the slider, read while drawing the track.
+    val fraction by rememberUpdatedState(((value - range.start) / (range.endInclusive - range.start)).coerceIn(0f, 1f))
     Slider(
         value = value,
         onValueChange = onValueChange,
@@ -377,27 +454,64 @@ fun DinaSlider(value: Float, onValueChange: (Float) -> Unit, range: ClosedFloati
         valueRange = range,
         steps = steps,
         onValueChangeFinished = onValueChangeFinished,
-        colors = SliderDefaults.colors(
-            thumbColor = c.accent,
-            activeTrackColor = c.accent,
-            inactiveTrackColor = c.surfaceSunken,
-            activeTickColor = c.onAccent,
-            inactiveTickColor = c.inkMuted,
-        ),
+        interactionSource = interaction,
+        thumb = {
+            Spacer(
+                Modifier.size(Dina.sizes.sliderThumb).drawWithCache {
+                    val sk = Sketcher()
+                    val r = size.minDimension / 2f * 0.86f
+                    val line = sk.circle(size.width / 2f, size.height / 2f, r, r * 0.04f, 76, points = 10)
+                    val disk = Path().also { sk.fill(it, line) }
+                    val ink = Path().also { sk.brush(it, 1.5f * density, 77, line, variation = 0.3f, weight = 0.6f) }
+                    val depth = 2f * density
+                    onDrawBehind {
+                        val sink = depth * grab
+                        translate(depth, depth) { drawPath(disk, c.shadow) }
+                        translate(sink, sink) {
+                            drawPath(disk, c.accent)
+                            drawPath(ink, c.ink.copy(alpha = 0.5f))
+                        }
+                    }
+                },
+            )
+        },
+        track = {
+            Spacer(
+                Modifier.fillMaxWidth().height(Dina.sizes.bar).drawWithCache {
+                    val sk = Sketcher()
+                    val line = sk.roundRect(size.width, size.height, size.height / 2f, density, seed = 78)
+                    val body = Path().also { sk.fill(it, line) }
+                    val ink = Path().also { sk.brush(it, 1.3f * density, 79, line, variation = 0.3f, weight = 0.5f) }
+                    val tick = size.height * 0.14f
+                    onDrawBehind {
+                        drawPath(body, c.surfaceSunken)
+                        clipRect(right = size.width * fraction) { drawPath(body, c.accent) }
+                        for (i in 1..steps) {
+                            val x = size.width * i / (steps + 1)
+                            drawCircle(if (x <= size.width * fraction) c.onAccent else c.inkMuted, tick, Offset(x, size.height / 2f), alpha = 0.7f)
+                        }
+                        drawPath(ink, c.lineStrong)
+                    }
+                },
+            )
+        },
     )
 }
 
 /** Title + description + switch; the whole row toggles. */
 @Composable
 fun ToggleRow(title: String, detail: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    val interaction = remember { MutableInteractionSource() }
     DinaCard(
-        Modifier.toggleable(value = checked, role = Role.Switch, onValueChange = onChange),
-        padding = PaddingValues(start = 18.dp, end = 14.dp, top = 14.dp, bottom = 14.dp),
+        Modifier
+            .pressFeedback(interaction)
+            .toggleable(value = checked, interactionSource = interaction, indication = null, role = Role.Switch, onValueChange = onChange),
+        padding = PaddingValues(start = Dina.spacing.cardX, end = Dina.spacing.m, top = Dina.spacing.m + Dina.spacing.xxs, bottom = Dina.spacing.m + Dina.spacing.xxs),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(title, style = Dina.type.bodyStrong, color = Dina.colors.ink)
-                Caption(detail, Modifier.padding(top = 3.dp))
+                Caption(detail, Modifier.padding(top = Dina.spacing.xxs))
             }
             Spacer(Modifier.width(Dina.spacing.m))
             DinaSwitch(checked, onCheckedChange = null)
@@ -407,31 +521,81 @@ fun ToggleRow(title: String, detail: String, checked: Boolean, onChange: (Boolea
 
 @Composable
 fun InfoRow(title: String, detail: String? = null) {
-    DinaCard(padding = PaddingValues(horizontal = 18.dp, vertical = 14.dp)) {
+    DinaCard(padding = PaddingValues(horizontal = Dina.spacing.cardX, vertical = Dina.spacing.m + Dina.spacing.xxs)) {
         Text(title, style = Dina.type.bodyStrong, color = Dina.colors.ink)
-        detail?.let { Caption(it, Modifier.padding(top = 3.dp)) }
-
+        detail?.let { Caption(it, Modifier.padding(top = Dina.spacing.xxs)) }
     }
 }
 
-/** Icon in a soft disk + text: for empty lists. */
+/** Several facts in one card, title over detail, with drawn rules between them. */
 @Composable
-fun EmptyState(icon: DinaIcon, title: String, detail: String, modifier: Modifier = Modifier, action: (@Composable ColumnScope.() -> Unit)? = null) {
+fun InfoGroup(rows: List<Pair<String, String>>, modifier: Modifier = Modifier) {
+    DinaCard(modifier, padding = PaddingValues(horizontal = Dina.spacing.cardX, vertical = Dina.spacing.xs)) {
+        rows.forEachIndexed { index, (title, detail) ->
+            if (index > 0) SketchDivider(seed = 95 + index)
+            Column(Modifier.fillMaxWidth().padding(vertical = Dina.spacing.m).semantics(mergeDescendants = true) {}) {
+                Text(title, style = Dina.type.bodyStrong, color = Dina.colors.ink)
+                Caption(detail, Modifier.padding(top = Dina.spacing.xxs))
+            }
+        }
+    }
+}
+
+/** One line of a [MetricTable]; [strong] lines stand out (totals). */
+class Metric(val label: String, val value: String, val strong: Boolean = false, val indent: Boolean = false)
+
+/** Label on the left, value on the right; long values wrap under themselves, not under the label. */
+@Composable
+fun MetricTable(rows: List<Metric>, modifier: Modifier = Modifier) {
+    val c = Dina.colors
+    Column(modifier.fillMaxWidth()) {
+        rows.forEachIndexed { index, row ->
+            if (index > 0) SketchDivider(color = c.line.copy(alpha = 0.6f), seed = 120 + index)
+            Row(
+                Modifier.fillMaxWidth().padding(vertical = Dina.spacing.s - Dina.spacing.xxs).semantics(mergeDescendants = true) {},
+                horizontalArrangement = Arrangement.spacedBy(Dina.spacing.m),
+            ) {
+                Text(
+                    row.label,
+                    Modifier.weight(0.48f).padding(start = if (row.indent) Dina.spacing.m else 0.dp),
+                    style = if (row.strong) Dina.type.label else Dina.type.caption,
+                    color = if (row.strong) c.ink else c.inkMuted,
+                )
+                Text(
+                    row.value,
+                    Modifier.weight(0.52f),
+                    style = if (row.strong) Dina.type.label else Dina.type.caption,
+                    color = if (row.strong) c.accent else c.ink,
+                    textAlign = TextAlign.End,
+                )
+            }
+        }
+    }
+}
+
+/** Dina (still, in a mood that fits) next to a short text: for empty lists. */
+@Composable
+fun EmptyState(title: String, detail: String, modifier: Modifier = Modifier, mood: VoiceState = VoiceState.IDLE, action: (@Composable ColumnScope.() -> Unit)? = null) {
+    val c = Dina.colors
     DinaCard(modifier) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(52.dp).background(Dina.colors.halo, Dina.shapes.pill), contentAlignment = Alignment.Center) {
-                SketchIcon(icon, null, tint = Dina.colors.accent, size = 26.dp)
+            Box(Modifier.size(Dina.sizes.characterTiny), contentAlignment = Alignment.Center) {
+                Halo({ c.halo }, c.shadow, outline = null, modifier = Modifier.matchParentSize())
+                DinaCharacter(mood, Modifier.matchParentSize(), animated = false, describe = false)
             }
-            Column(Modifier.padding(start = 14.dp).weight(1f)) {
-                Text(title, style = Dina.type.bodyStrong, color = Dina.colors.ink)
-                Caption(detail, Modifier.padding(top = 2.dp))
+            Column(Modifier.padding(start = Dina.spacing.l - Dina.spacing.xxs).weight(1f)) {
+                Text(title, style = Dina.type.bodyStrong, color = c.ink)
+                Caption(detail, Modifier.padding(top = Dina.spacing.xxs))
             }
         }
         action?.invoke(this)
     }
 }
 
-/** Secondary screen: back button, title and a scrolling column that respects system bars. */
+/**
+ * Secondary screen: a back button, then the title as the first item of a scrolling column that
+ * respects system bars. Once the title scrolls away, a small copy of it fades into the top bar.
+ */
 @Composable
 fun ScreenScaffold(
     title: String,
@@ -440,20 +604,42 @@ fun ScreenScaffold(
     content: LazyListScope.() -> Unit,
 ) {
     val c = Dina.colors
+    val motion = Dina.motion
+    val list = rememberLazyListState()
+    val scrolled by remember { derivedStateOf { list.firstVisibleItemIndex > 0 } }
+    val barTitle by animateFloatAsState(if (scrolled) 1f else 0f, motion.spring(motion.smooth), label = "barTitle")
+    val rise = Dina.spacing.s
     Column(Modifier.fillMaxSize().background(c.background).safeDrawingPadding()) {
         Row(
-            Modifier.fillMaxWidth().padding(start = 12.dp, end = Dina.spacing.gutter, top = 6.dp, bottom = 4.dp).heightIn(min = 60.dp),
+            // The back arrow's ink lines up with the screen margin.
+            Modifier.fillMaxWidth().padding(start = Dina.spacing.xs, end = Dina.spacing.gutter, top = Dina.spacing.xs),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             RoundIconButton(DinaIcon.BACK, "Volver", onBack, style = ButtonStyle.GHOST)
-            Text(title, Modifier.padding(start = 6.dp).weight(1f).semantics { heading() }, style = Dina.type.title, color = c.ink)
+            Text(
+                title,
+                Modifier.padding(start = Dina.spacing.xs).weight(1f).graphicsLayer {
+                    alpha = barTitle
+                    translationY = (1f - barTitle) * rise.toPx()
+                },
+                style = Dina.type.heading,
+                color = c.ink,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
         LazyColumn(
             Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = Dina.spacing.gutter, end = Dina.spacing.gutter, bottom = 40.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            state = list,
+            contentPadding = PaddingValues(start = Dina.spacing.gutter, end = Dina.spacing.gutter, bottom = Dina.spacing.xxl + Dina.spacing.xs),
+            verticalArrangement = Arrangement.spacedBy(Dina.spacing.stack),
         ) {
-            if (subtitle != null) item { Caption(subtitle, Modifier.padding(start = 4.dp, bottom = Dina.spacing.xs)) }
+            item(key = "title") {
+                Column(Modifier.padding(bottom = Dina.spacing.xs)) {
+                    Text(title, Modifier.semantics { heading() }, style = Dina.type.title, color = c.ink)
+                    if (subtitle != null) Caption(subtitle, Modifier.padding(top = Dina.spacing.xs))
+                }
+            }
             content()
         }
     }

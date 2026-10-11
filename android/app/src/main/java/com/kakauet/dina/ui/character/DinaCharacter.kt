@@ -19,8 +19,13 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import com.kakauet.dina.core.VoiceState
+import com.kakauet.dina.ui.components.LevelSmoother
 import com.kakauet.dina.ui.theme.CharacterColors
 import com.kakauet.dina.ui.theme.Dina
+import kotlin.math.cos
+import kotlin.math.exp
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 /** The two looks of Dina; chosen in Ajustes. */
 enum class CharacterDesign(val label: String, val pitch: String, internal val rig: () -> Rig) {
@@ -81,6 +86,7 @@ fun DinaCharacter(
         }
     }
     val renderer = remember(design) { CharacterRenderer(design.rig()) }
+    renderer.blendS = Dina.motion.character / 1000f
     SideEffect { renderer.switchTo(state, clock.floatValue, blend = motion) }
     val colors = Dina.colors.character
     val semantics = if (describe) Modifier.semantics {
@@ -107,6 +113,11 @@ internal class CharacterRenderer(private val rig: Rig) {
     private var enteredAt = 0f
     private var blending = false
     private var preparedSide = 0f
+    /** How long a change of expression takes (Theme.kt › DinaMotion.character). */
+    var blendS = 0.45f
+    // The microphone level jumps ~50 times per second; she follows it smoothly instead.
+    private val heard = LevelSmoother()
+    private var lastTime = -1f
 
     /** The first state counts from time zero; later ones blend from the last drawn pose unless [blend] is off. */
     fun switchTo(next: VoiceState, now: Float, blend: Boolean) {
@@ -135,8 +146,11 @@ internal class CharacterRenderer(private val rig: Rig) {
         f.boil = if (motion) (time * BOIL_FPS).toInt() % BOIL_FRAMES else 0
 
         val since = time - enteredAt
-        choreograph(current, time, since, level, motion, target, greeting)
-        pose.blend(from, target, if (blending) smooth01(0f, TRANSITION_S, since) else 1f)
+        // The first frame starts at the live level, so a still frame (screenshots) shows it.
+        if (lastTime < 0f || !motion) heard.reset(level.coerceIn(0f, 1f)) else heard.next(level, time - lastTime)
+        lastTime = time
+        choreograph(current, time, since, heard.value, motion, target, greeting)
+        pose.blend(from, target, if (blending) settle(since / blendS) else 1f)
 
         val side = f.side
         // Soft ground shadow, outside the body transform so it stays on the floor.
@@ -159,7 +173,17 @@ internal class CharacterRenderer(private val rig: Rig) {
         }
     }
 
-    private companion object {
-        const val TRANSITION_S = 0.45f
-    }
+}
+
+/**
+ * Step response of a slightly underdamped spring over [x] = elapsed / duration: 0 at 0, a ~3 %
+ * overshoot, settled at 1 by the end. Blending poses with it gives expressions a soft landing.
+ */
+internal fun settle(x: Float): Float {
+    if (x <= 0f) return 0f
+    if (x >= 1.25f) return 1f
+    val zeta = 0.75f
+    val omega = 6f
+    val damped = omega * sqrt(1f - zeta * zeta)
+    return 1f - exp(-zeta * omega * x) * (cos(damped * x) + zeta / sqrt(1f - zeta * zeta) * sin(damped * x))
 }

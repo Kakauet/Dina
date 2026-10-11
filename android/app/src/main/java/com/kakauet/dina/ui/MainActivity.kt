@@ -115,6 +115,8 @@ private fun DinaApp(prefs: UiPreferences) {
                 onOpenThings = { graph.tools.refresh(); screen = Screen.THINGS },
                 onOpenSettings = { screen = Screen.SETTINGS },
                 onSend = { text ->
+                    // Read when sending, so this callback does not change with every session update.
+                    val session = graph.store.session.value
                     when {
                         !session.ready -> { Toast.makeText(context, "Dina aún se está preparando.", Toast.LENGTH_SHORT).show(); false }
                         session.state.busy -> { Toast.makeText(context, "Espera a que Dina termine de responder.", Toast.LENGTH_SHORT).show(); false }

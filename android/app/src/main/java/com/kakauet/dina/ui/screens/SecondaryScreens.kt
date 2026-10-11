@@ -52,13 +52,18 @@ import com.kakauet.dina.ui.components.DinaCard
 import com.kakauet.dina.ui.components.DinaIcon
 import com.kakauet.dina.ui.components.DinaSlider
 import com.kakauet.dina.ui.components.EmptyState
+import com.kakauet.dina.ui.components.Hint
+import com.kakauet.dina.ui.components.InfoGroup
 import com.kakauet.dina.ui.components.InfoRow
+import com.kakauet.dina.ui.components.Metric
+import com.kakauet.dina.ui.components.MetricTable
 import com.kakauet.dina.ui.components.Overline
 import com.kakauet.dina.ui.components.PillSwitch
 import com.kakauet.dina.ui.components.ScreenScaffold
 import com.kakauet.dina.ui.components.SectionHeader
 import com.kakauet.dina.ui.components.SketchIcon
 import com.kakauet.dina.ui.components.ToggleRow
+import com.kakauet.dina.ui.components.animateDinaItem
 import com.kakauet.dina.ui.components.sketchBackground
 import com.kakauet.dina.ui.theme.Dina
 import com.kakauet.dina.ui.widgets.AlarmCard
@@ -84,32 +89,33 @@ private val SPANISH: Locale = Locale.forLanguageTag("es-ES")
 fun MyThingsScreen(world: ToolWorld, onClose: () -> Unit) {
     val tools = LocalContext.current.dina.tools
     ScreenScaffold("Mis cosas", onClose, subtitle = "Lo que Dina guarda para ti. Puedes cambiarlo aquí o por voz.") {
-        item(key = "timers") { SectionHeader("Temporizadores", icon = DinaIcon.HOURGLASS, count = world.timers.size) }
+        // Non-breaking spaces keep a quote's last word with the one before it («a las 7»).
+        item(key = "timers") { SectionHeader("Temporizadores", animateDinaItem(), icon = DinaIcon.HOURGLASS, count = world.timers.size) }
         if (world.timers.isEmpty()) item(key = "timers-empty") {
-            EmptyState(DinaIcon.HOURGLASS, "Sin temporizadores", "Prueba a decir «pon un temporizador de 10 minutos».", Modifier.animateItem())
+            EmptyState("Ningún temporizador", "Di «pon un temporizador de 10 minutos».", animateDinaItem(), mood = VoiceState.FOLLOW_UP)
         }
-        items(world.timers, key = { "timer-" + it.id }) { Box(Modifier.animateItem()) { TimerCard(it) } }
+        items(world.timers, key = { "timer-" + it.id }) { Box(animateDinaItem()) { TimerCard(it) } }
 
-        item(key = "alarms") { SectionHeader("Alarmas", icon = DinaIcon.BELL, count = world.alarms.size) }
+        item(key = "alarms") { SectionHeader("Alarmas", animateDinaItem(), icon = DinaIcon.BELL, count = world.alarms.size) }
         if (world.alarms.isEmpty()) item(key = "alarms-empty") {
-            EmptyState(DinaIcon.BELL, "Sin alarmas", "Prueba a decir «pon una alarma a las 7».", Modifier.animateItem())
+            EmptyState("Ninguna alarma", "Di «pon una alarma a las 7».", animateDinaItem(), mood = VoiceState.LOADING)
         }
-        items(world.alarms, key = { "alarm-" + it.id }) { Box(Modifier.animateItem()) { AlarmCard(it) } }
+        items(world.alarms, key = { "alarm-" + it.id }) { Box(animateDinaItem()) { AlarmCard(it) } }
 
-        item(key = "stopwatches") { SectionHeader("Cronómetro", icon = DinaIcon.STOPWATCH, count = world.stopwatches.size) }
+        item(key = "stopwatches") { SectionHeader("Cronómetro", animateDinaItem(), icon = DinaIcon.STOPWATCH, count = world.stopwatches.size) }
         if (world.stopwatches.isEmpty()) item(key = "stopwatches-empty") {
-            EmptyState(DinaIcon.STOPWATCH, "Cronómetro listo", "Inícialo aquí o diciendo «pon un cronómetro».", Modifier.animateItem()) {
+            EmptyState("Cuando quieras", "Empieza aquí o di «pon un cronómetro».", animateDinaItem(), mood = VoiceState.ACTIVATED) {
                 DinaButton(
-                    "Iniciar", { tools.execute(StopwatchCommand.Start()) }, Modifier.fillMaxWidth().padding(top = 14.dp),
+                    "Empezar", { tools.execute(StopwatchCommand.Start()) }, Modifier.fillMaxWidth().padding(top = Dina.spacing.m),
                     icon = DinaIcon.PLAY, style = ButtonStyle.PRIMARY,
                 )
             }
         }
-        items(world.stopwatches, key = { "stopwatch-" + it.id }) { Box(Modifier.animateItem()) { StopwatchCard(it) } }
+        items(world.stopwatches, key = { "stopwatch-" + it.id }) { Box(animateDinaItem()) { StopwatchCard(it) } }
 
-        item(key = "shopping") { SectionHeader("Lista de la compra", icon = DinaIcon.CART, count = world.shopping.count { !it.completed }) }
-        item(key = "shopping-add") { ShoppingComposer() }
-        item(key = "shopping-list") { ShoppingCard(world.shopping) }
+        item(key = "shopping") { SectionHeader("Lista de la compra", animateDinaItem(), icon = DinaIcon.CART, count = world.shopping.count { !it.completed }) }
+        item(key = "shopping-add") { Box(animateDinaItem()) { ShoppingComposer() } }
+        item(key = "shopping-list") { Box(animateDinaItem()) { ShoppingCard(world.shopping) } }
     }
 }
 
@@ -139,20 +145,20 @@ fun SettingsScreen(prefs: UiPreferences, onClose: () -> Unit, onOpenDiagnostics:
                     context.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, Uri.parse("package:${context.packageName}")))
                 }, Modifier.fillMaxWidth(), icon = DinaIcon.BELL, style = ButtonStyle.PRIMARY)
             }
-            item { Caption("Sin ellos, las alarmas y los temporizadores pueden sonar tarde o sin aviso.", Modifier.padding(start = 4.dp)) }
+            item { Hint("Sin ellos, las alarmas y los temporizadores pueden sonar tarde o sin aviso.") }
         }
 
         section("Escucha", DinaIcon.MIC)
         item { SettingToggle("Dina activa", "Escucha la palabra «Dina» mientras la app está abierta.", settings.dinaActive) { changed { dinaActive = it } } }
         item { SettingToggle("Escuchar en segundo plano", "Sigue escuchando al salir de la app, con una notificación fija.", settings.backgroundListening) { changed { backgroundListening = it } } }
         item { SettingToggle("Con la pantalla apagada", "Solo con la escucha en segundo plano. Gasta más batería.", settings.listenScreenOff) { changed { listenScreenOff = it } } }
-        item { Overline("Sensibilidad", Modifier.padding(start = 4.dp, top = 4.dp), color = Dina.colors.inkMuted) }
+        item { Overline("Sensibilidad", Modifier.padding(start = Dina.spacing.cardX, top = Dina.spacing.xs), color = Dina.colors.inkMuted) }
         item {
             SettingChoice(WakeSensitivity.entries.reversed().map { it.name to it.label }, settings.wakeSensitivity.name) { name ->
                 changed { wakeSensitivity = WakeSensitivity.valueOf(name) }
             }
         }
-        item { Caption("Alta: te oye mejor de lejos o en voz baja, pero se activa más por error. Baja: casi nunca se activa sola.", Modifier.padding(start = 4.dp)) }
+        item { Hint("Alta: te oye mejor de lejos o en voz baja, pero se activa más por error. Baja: casi nunca se activa sola.") }
         item { SliderRow("Tiempo para seguir hablando", settings.followUpTimeoutMs / 1000f, 3f..12f, { "${it.toInt()} s" }, steps = 8) { changed { followUpTimeoutMs = it.toLong() * 1_000L } } }
         item {
             SettingToggle(
@@ -167,20 +173,20 @@ fun SettingsScreen(prefs: UiPreferences, onClose: () -> Unit, onOpenDiagnostics:
         item {
             SettingChoice(VoiceChoice.entries.map { it.id to it.label }, settings.voice.id) { id -> changed { voiceId = id } }
         }
-        item { Caption("Supertonic suena más natural; Piper es más ligera y responde antes en móviles lentos.", Modifier.padding(start = 4.dp)) }
+        item { Hint("Supertonic suena más natural; Piper es más ligera y responde antes en móviles lentos.") }
         if (AppVariant.stepChoices.size > 1) {
             item {
                 SettingChoice(AppVariant.stepChoices.map { it.steps.toString() to it.label }, settings.supertonicSteps.toString()) { steps -> changed { supertonicSteps = steps.toInt() } }
             }
-            item { Caption("Natural: voz más pulida. Rápida: empieza a hablar antes. Recomendado: ${AppVariant.defaultSteps} pasos.", Modifier.padding(start = 4.dp)) }
+            item { Hint("Natural: voz más pulida. Rápida: empieza a hablar antes. Recomendado: ${AppVariant.defaultSteps} pasos.") }
         } else {
-            item { Caption("Dina Lite habla con ${AppVariant.defaultSteps} pasos, para responder antes en móviles modestos.", Modifier.padding(start = 4.dp)) }
+            item { Hint("Dina Lite habla con ${AppVariant.defaultSteps} pasos, para responder antes en móviles modestos.") }
         }
         item { SliderRow("Volumen de Dina", settings.voiceVolume * 100f, 0f..100f, { "${it.toInt()} %" }) { changed { voiceVolume = it / 100f } } }
 
         section("Apariencia", DinaIcon.SPARK)
         item { CharacterPicker(prefs.character, prefs::updateCharacter) }
-        item { Caption("El icono de la app cambia con el personaje al salir de Dina.", Modifier.padding(start = 4.dp)) }
+        item { Hint("El icono de la app cambia con el personaje al salir de Dina.") }
         item {
             PillSwitch(
                 ThemeMode.entries.map { it.label to null },
@@ -193,7 +199,7 @@ fun SettingsScreen(prefs: UiPreferences, onClose: () -> Unit, onOpenDiagnostics:
         section("Conversación", DinaIcon.CHAT)
         item { SettingToggle("Mostrar la hora", "Añade la hora a los mensajes del modo texto.", settings.showTimestamps) { changed { showTimestamps = it } } }
         item { DinaButton("Nueva conversación", onNewConversation, Modifier.fillMaxWidth(), icon = DinaIcon.REFRESH) }
-        item { Caption("Dina olvida lo hablado; tus alarmas, temporizadores y listas se mantienen.", Modifier.padding(start = 4.dp)) }
+        item { Hint("Dina olvida lo hablado; tus alarmas, temporizadores y listas se mantienen.") }
 
         section("Datos", DinaIcon.LIST)
         item {
@@ -214,14 +220,17 @@ fun SettingsScreen(prefs: UiPreferences, onClose: () -> Unit, onOpenDiagnostics:
         section("Acerca de Dina", DinaIcon.SPARK)
         item {
             val version = runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull()
-            InfoRow("Versión", version ?: "—")
+            InfoGroup(
+                listOf(
+                    "Versión" to "${version ?: "—"} · ${AppVariant.label}",
+                    "Modelo" to graph.brainSpec.displayName,
+                    "Reconocimiento de voz" to if (settings.moonshineStt) "Moonshine Spanish Base, dentro de Dina" else "Android, sin conexión",
+                    "Voz" to settings.voice.detail,
+                    "Privacidad" to "Todo funciona en el móvil: Dina no tiene permiso de Internet y no guarda audio.",
+                    "Licencias" to "Tipografías Fredoka y Nunito (SIL Open Font License 1.1). Voz Supertonic 3 de Supertone (BigScience OpenRAIL-M).",
+                ),
+            )
         }
-        item { InfoRow("Edición", AppVariant.label) }
-        item { InfoRow("Modelo", graph.brainSpec.displayName) }
-        item { InfoRow("Reconocimiento de voz", if (settings.moonshineStt) "Moonshine Spanish Base, dentro de Dina" else "Android, sin conexión") }
-        item { InfoRow("Voz", settings.voice.detail) }
-        item { InfoRow("Privacidad", "Todo funciona en el móvil: Dina no tiene permiso de Internet y no guarda audio.") }
-        item { InfoRow("Licencias", "Tipografías Fredoka y Nunito (SIL Open Font License 1.1). Voz Supertonic 3 de Supertone (BigScience OpenRAIL-M).") }
         item { DinaButton("Diagnóstico", onOpenDiagnostics, Modifier.fillMaxWidth(), icon = DinaIcon.GEAR) }
     }
     confirm?.let { action ->
@@ -236,7 +245,7 @@ private class Confirmation(val title: String, val message: String, val confirmLa
 @Composable
 private fun CharacterPicker(selected: CharacterDesign, onSelect: (CharacterDesign) -> Unit) {
     val c = Dina.colors
-    Row(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    Row(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(Dina.spacing.m)) {
         CharacterDesign.entries.forEach { design ->
             val active = design == selected
             Column(
@@ -244,15 +253,15 @@ private fun CharacterPicker(selected: CharacterDesign, onSelect: (CharacterDesig
                     .weight(1f)
                     .sketchBackground(if (active) c.accentSoft else c.surface, if (active) c.accent else c.line, c.shadow, seed = 80 + design.ordinal)
                     .selectable(active, role = Role.RadioButton) { onSelect(design) }
-                    .padding(horizontal = 12.dp, vertical = 14.dp),
+                    .padding(horizontal = Dina.spacing.m, vertical = Dina.spacing.m + Dina.spacing.xxs),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                DinaCharacter(VoiceState.IDLE, Modifier.size(112.dp), design = design, animated = active, describe = false)
+                DinaCharacter(VoiceState.IDLE, Modifier.size(Dina.sizes.characterCard), design = design, animated = active, describe = false)
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (active) SketchIcon(DinaIcon.CHECK, null, Modifier.padding(end = 4.dp), tint = c.accent, size = 18.dp)
+                    if (active) SketchIcon(DinaIcon.CHECK, null, Modifier.padding(end = Dina.spacing.xs), tint = c.accent, size = Dina.sizes.icon)
                     Text(design.label, style = Dina.type.heading, color = c.ink)
                 }
-                Caption(design.pitch, Modifier.padding(top = 2.dp), textAlign = TextAlign.Center)
+                Caption(design.pitch, Modifier.padding(top = Dina.spacing.xxs), textAlign = TextAlign.Center)
             }
         }
     }
@@ -261,12 +270,18 @@ private fun CharacterPicker(selected: CharacterDesign, onSelect: (CharacterDesig
 @Composable
 fun DiagnosticsScreen(metrics: PerformanceMetrics, wake: WakeDiagnosticEvent?, debugError: String, onClose: () -> Unit) {
     val context = LocalContext.current
-    val metricsText = formatMetrics(metrics)
-    val wakeText = wake?.let { event ->
+    val latency = latencyRows(metrics)
+    val detail = metricRows(metrics)
+    val wakeRows = wake?.let { event ->
         val time = DateFormat.getTimeInstance(DateFormat.MEDIUM).format(Date(event.timestampMs))
-        String.format(SPANISH, "Confianza: %.4f\nUmbral: %.2f\nDecisión: %s\nHora: %s",
-            event.confidence, event.threshold, if (event.detected) "activada" else "casi (no activada)", time)
-    } ?: "Activa «Registrar intentos» y di «Dina»."
+        listOf(
+            Metric("Confianza", String.format(SPANISH, "%.4f", event.confidence)),
+            Metric("Umbral", String.format(SPANISH, "%.2f", event.threshold)),
+            Metric("Decisión", if (event.detected) "activada" else "casi (no activada)", strong = true),
+            Metric("Hora", time),
+        )
+    }
+    val wakeText = wakeRows?.let(::asText) ?: "Activa «Registrar intentos» y di «Dina»."
     val settings = context.dina.settings
     fun changed(block: DinaSettings.() -> Unit) {
         settings.block()
@@ -274,32 +289,33 @@ fun DiagnosticsScreen(metrics: PerformanceMetrics, wake: WakeDiagnosticEvent?, d
     }
     ScreenScaffold("Diagnóstico", onClose, subtitle = "Medidas de la última respuesta en este móvil.") {
         item { DinaButton("Medir una respuesta", { DinaService.benchmark(context) }, Modifier.fillMaxWidth(), icon = DinaIcon.PLAY, style = ButtonStyle.PRIMARY) }
-        item { Caption("Dina responde a «¿Qué hora es?» en voz alta y mide cada etapa.", Modifier.padding(start = 4.dp)) }
+        item { Hint("Dina responde a «¿Qué hora es?» en voz alta y mide cada etapa.") }
         item {
             DinaCard {
                 Overline("Tiempo hasta la voz")
-                Text(latencyText(metrics), Modifier.padding(top = 8.dp), style = Dina.type.mono, color = Dina.colors.ink)
+                MetricTable(latency, Modifier.padding(top = Dina.spacing.s))
             }
         }
         item {
             DinaCard {
                 Overline("Detalle")
-                Text(metricsText, Modifier.padding(top = 8.dp), style = Dina.type.mono, color = Dina.colors.ink)
+                MetricTable(detail, Modifier.padding(top = Dina.spacing.s))
             }
         }
-        item { SectionHeader("Rendimiento", Modifier.padding(top = 8.dp), icon = DinaIcon.GEAR) }
+        item { SectionHeader("Rendimiento", Modifier.padding(top = Dina.spacing.s), icon = DinaIcon.GEAR) }
         item { SliderRow("Hilos del modelo", settings.llmThreads.toFloat(), 2f..8f, { "${it.toInt()} hilos" }, steps = 5) { changed { llmThreads = it.toInt() } } }
         item { SliderRow("Hilos de la voz", settings.voiceThreads.toFloat(), 1f..8f, { "${it.toInt()} hilos" }, steps = 6) { changed { voiceThreads = it.toInt() } } }
         item {
             SettingChoice(OrtProvider.entries.map { it.name to it.label }, settings.voiceProvider.name) { name -> changed { voiceProvider = OrtProvider.valueOf(name) } }
         }
-        item { Caption("Motor de la voz Supertonic. Cambiar los hilos o el motor recarga la voz; compara «Primera síntesis».", Modifier.padding(start = 4.dp)) }
-        item { SectionHeader("Palabra «Dina»", Modifier.padding(top = 8.dp), icon = DinaIcon.MIC) }
+        item { Hint("Motor de la voz Supertonic. Cambiar los hilos o el motor recarga la voz; compara «Primera síntesis».") }
+        item { SectionHeader("Palabra «Dina»", Modifier.padding(top = Dina.spacing.s), icon = DinaIcon.MIC) }
         item { SettingToggle("Registrar intentos", "Guarda la confianza de cada activación y de cada casi activación, nunca audio.", settings.wakeDiagnosticEnabled) { changed { wakeDiagnosticEnabled = it } } }
         item {
             DinaCard {
                 Overline("Último intento")
-                Text(wakeText, Modifier.padding(vertical = 8.dp), style = Dina.type.mono, color = Dina.colors.ink)
+                if (wakeRows != null) MetricTable(wakeRows, Modifier.padding(vertical = Dina.spacing.s))
+                else Caption(wakeText, Modifier.padding(vertical = Dina.spacing.s))
                 Row(horizontalArrangement = Arrangement.spacedBy(Dina.spacing.s)) {
                     DinaButton("Era «Dina»", { DinaService.labelWake(context, "positive") }, Modifier.weight(1f), icon = DinaIcon.CHECK)
                     DinaButton("No lo era", { DinaService.labelWake(context, "negative") }, Modifier.weight(1f), icon = DinaIcon.CLOSE)
@@ -309,13 +325,13 @@ fun DiagnosticsScreen(metrics: PerformanceMetrics, wake: WakeDiagnosticEvent?, d
         if (debugError.isNotBlank()) item {
             DinaCard {
                 Overline("Último error", color = Dina.colors.danger)
-                Text(debugError, Modifier.padding(top = 6.dp), style = Dina.type.mono, color = Dina.colors.danger)
+                Text(debugError, Modifier.padding(top = Dina.spacing.s - Dina.spacing.xxs), style = Dina.type.mono, color = Dina.colors.danger)
             }
         }
         item {
             DinaButton("Copiar diagnóstico", {
                 val events = File(context.filesDir, "wakeword-diagnostics/events.jsonl").takeIf(File::isFile)?.readText()?.takeLast(30_000).orEmpty()
-                val content = listOf(latencyText(metrics), metricsText, wakeText, debugError, events).filter(String::isNotBlank).joinToString("\n\n")
+                val content = listOf(asText(latency), asText(detail), wakeText, debugError, events).filter(String::isNotBlank).joinToString("\n\n")
                 context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Diagnóstico de Dina", content))
             }, Modifier.fillMaxWidth(), icon = DinaIcon.LIST)
         }
@@ -336,7 +352,7 @@ private fun SettingToggle(title: String, detail: String, initial: Boolean, onCha
     ToggleRow(title, detail, checked) { checked = it; onChange(it) }
 }
 
-private fun LazyListScope.section(title: String, icon: DinaIcon) = item { SectionHeader(title, Modifier.padding(top = 8.dp), icon = icon) }
+private fun LazyListScope.section(title: String, icon: DinaIcon) = item { SectionHeader(title, Modifier.padding(top = Dina.spacing.s), icon = icon) }
 
 @Composable
 private fun SliderRow(
@@ -358,8 +374,8 @@ private fun SliderRow(
 }
 
 /** The path from the final transcript to Dina's first audio, stage by stage. */
-private fun latencyText(m: PerformanceMetrics): String {
-    fun ms(value: Double?) = value?.let { "%.0f ms".format(it) } ?: "—"
+private fun latencyRows(m: PerformanceMetrics): List<Metric> {
+    fun ms(value: Double?) = value?.let { "%.0f\u00A0ms".format(it) } ?: "—"
     val prefill = if (m.tokenizationMs == null && m.prefillMs == null) null else (m.tokenizationMs ?: 0.0) + (m.prefillMs ?: 0.0)
     val rest = if (m.turnWaitMs == null && m.turnBookkeepingMs == null) null else (m.turnWaitMs ?: 0.0) + (m.turnBookkeepingMs ?: 0.0)
     return listOf(
@@ -373,18 +389,18 @@ private fun latencyText(m: PerformanceMetrics): String {
             "duración ${ms(m.ttsDurationMs)} · codificador ${ms(m.ttsEncoderMs)} · estimador ${ms(m.ttsEstimatorMs)} · vocoder ${ms(m.ttsVocoderMs)}",
         "Silencio recortado al inicio" to ms(m.ttsLeadTrimmedMs),
         "Inicio del audio" to ms(m.audioStartMs),
-        "TOTAL" to ms(m.transcriptToFirstAudioMs),
+        "Total" to ms(m.transcriptToFirstAudioMs),
         "Huecos entre frases" to ms(m.ttsGapMs),
         "Caché de la voz" to (m.ttsCachedSentences?.let { n -> "$n de ${m.sentences ?: n} frases" + (m.ttsCacheReadMs?.let { " · lectura ${ms(it)}" } ?: "") } ?: "—"),
         "Fin del audio visto por" to m.audioEndClock.ifBlank { "—" },
         "Preparado mientras hablas" to ms(m.prepareMs),
         "Voz" to m.voice.ifBlank { "—" },
         "Variante" to m.variant.ifBlank { "—" },
-    ).joinToString("\n") { "${it.first}: ${it.second}" }
+    ).map { (label, value) -> Metric(label.trim(), value, strong = label == "Total", indent = label.startsWith(" ")) }
 }
 
-private fun formatMetrics(m: PerformanceMetrics): String {
-    fun ms(value: Double?) = value?.let { "%.0f ms".format(it) } ?: "—"
+private fun metricRows(m: PerformanceMetrics): List<Metric> {
+    fun ms(value: Double?) = value?.let { "%.0f\u00A0ms".format(it) } ?: "—"
     return listOf(
         "«Dina» → activación" to ms(m.wakeToActivationMs),
         "Fin de tu voz → detección" to ms(m.voiceEndToVadMs),
@@ -413,5 +429,8 @@ private fun formatMetrics(m: PerformanceMetrics): String {
         "Tamaño del modelo" to (m.modelBytes?.let { "%.1f MB".format(it / 1024.0 / 1024.0) } ?: "—"),
         "Motor de inferencia" to m.backend,
         "Carga del modelo" to ms(m.modelLoadMs),
-    ).joinToString("\n") { "${it.first}: ${it.second}" }
+    ).map { (label, value) -> Metric(label, value) }
 }
+
+/** The rows as plain text, for the clipboard. */
+private fun asText(rows: List<Metric>) = rows.joinToString("\n") { (if (it.indent) "  " else "") + "${it.label}: ${it.value}" }

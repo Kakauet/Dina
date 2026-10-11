@@ -13,6 +13,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kakauet.dina.ui.character.Sketcher
+import com.kakauet.dina.ui.theme.Dina
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -119,9 +120,10 @@ enum class DinaIcon(internal val draw: IconPen.() -> Unit) {
         line(9f, 6f, 9f, 18f)
         line(15f, 6f, 15f, 18f)
     }),
+    /** Clockwise: the arrowhead sits at the end of the arc and points the way it turns. */
     REFRESH({
-        arc(12f, 12f, 7.5f, -40f, 250f, 12)
-        line(16.5f, 3.6f, 17.9f, 7.4f, 14f, 8.6f)
+        arc(12f, 12f, 7.5f, 20f, 290f, 13)
+        line(12.7f, 1.7f, 14.6f, 5f, 11f, 6.3f)
     }),
     BELL({
         loop(12f, 4.5f, 17f, 7.5f, 17.5f, 13.5f, 19.5f, 17f, 4.5f, 17f, 6.5f, 13.5f, 7f, 7.5f)
@@ -174,7 +176,7 @@ fun SketchIcon(
     contentDescription: String?,
     modifier: Modifier = Modifier,
     tint: Color = LocalContentColor.current,
-    size: Dp = 24.dp,
+    size: Dp = Dina.sizes.iconLarge,
 ) {
     val described = if (contentDescription != null) Modifier.semantics { this.contentDescription = contentDescription } else Modifier
     Spacer(

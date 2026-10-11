@@ -25,8 +25,8 @@ android {
         applicationId = "com.kakauet.dina"
         minSdk = 34
         targetSdk = 36
-        versionCode = 16
-        versionName = "2.4"
+        versionCode = 17
+        versionName = "2.4.1"
 
         ndk {
             abiFilters += "arm64-v8a"
