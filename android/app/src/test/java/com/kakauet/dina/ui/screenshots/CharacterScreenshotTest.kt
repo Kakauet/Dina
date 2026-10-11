@@ -42,11 +42,11 @@ private class Moment(val state: VoiceState, val time: Float, val level: Float, v
 private val moments = listOf(
     Moment(VoiceState.IDLE, 0.5f, 0f, "Esperando"),
     Moment(VoiceState.LOADING, 3.6f, 0f, "Despertando"),
-    Moment(VoiceState.ACTIVATED, 0.14f, 0f, "Activada"),
+    Moment(VoiceState.ACTIVATED, 0.3f, 0f, "Activada"),
     Moment(VoiceState.LISTENING, 1.1f, 0.65f, "Escuchando"),
     Moment(VoiceState.TRANSCRIBING, 0.6f, 0f, "Transcribiendo"),
     Moment(VoiceState.THINKING, 1f, 0f, "Pensando"),
-    Moment(VoiceState.EXECUTING, 0.2f, 0f, "Hecho"),
+    Moment(VoiceState.EXECUTING, 0.36f, 0f, "Hecho"),
     Moment(VoiceState.SPEAKING, 0.5f, 0.7f, "Hablando"),
     Moment(VoiceState.FOLLOW_UP, 0.4f, 0f, "¿Algo más?"),
     Moment(VoiceState.ERROR, 1f, 0f, "Error"),
@@ -72,6 +72,16 @@ class CharacterScreenshotTest {
     @Test fun broteStory() = story(CharacterDesign.BROTE, "brote-story")
 
     @Test fun musgoStory() = story(CharacterDesign.MUSGO, "musgo-story")
+
+    /** The same turn as a grid of frames every 0.25 s, to review the acting without a GIF viewer. */
+    @Test fun broteFilm() = film(CharacterDesign.BROTE, "brote-film", (1..38).map { it * 0.25f }, columns = 8)
+
+    @Test fun musgoFilm() = film(CharacterDesign.MUSGO, "musgo-film", (1..38).map { it * 0.25f }, columns = 8)
+
+    /** Half a minute of waiting, every half second: her idle habits (glance, hum, bounce, stretch). */
+    @Test fun broteIdleFilm() = film(CharacterDesign.BROTE, "brote-idle-film", (1..60).map { it * 0.5f }, columns = 10, idle = true)
+
+    @Test fun musgoIdleFilm() = film(CharacterDesign.MUSGO, "musgo-idle-film", (1..60).map { it * 0.5f }, columns = 10, idle = true)
 
     private fun states(design: CharacterDesign, name: String) {
         val index = mutableIntStateOf(0)
@@ -110,6 +120,21 @@ class CharacterScreenshotTest {
         }
         compose.gif("character", name, frames = (STORY_S * fps).toInt(), fps = fps) { time.floatValue = it / fps.toFloat() }
     }
+
+    private fun film(design: CharacterDesign, name: String, times: List<Float>, columns: Int, idle: Boolean = false) {
+        val time = mutableFloatStateOf(0f)
+        compose.setContent {
+            val t by time
+            val beat = if (idle) Beat(Float.MAX_VALUE, VoiceState.IDLE, "") else scene(t)
+            Themed(design = design) {
+                Box(Modifier.background(Dina.colors.background).padding(2.dp), contentAlignment = Alignment.Center) {
+                    Halo(Dina.colors.halo, Dina.colors.shadow, null, Modifier.size(92.dp))
+                    DinaCharacter(beat.state, Modifier.size(100.dp), audioLevel = { beat.level(t) }, time = t)
+                }
+            }
+        }
+        compose.filmstrip("character", name, times, columns, stepS = if (idle) 1f / 20f else 1f / 30f) { time.floatValue = it }
+    }
 }
 
 @Composable
@@ -143,16 +168,19 @@ private fun Sheet(design: CharacterDesign, dark: Boolean = false) = Themed(dark,
     }
 }
 
-private const val STORY_S = 8f
+private const val STORY_S = 9.5f
 
 private class Beat(val until: Float, val state: VoiceState, val label: String, val level: (Float) -> Float = { 0f })
 
+/** A turn as the app plays it: called, listening, going over it, thinking, done, answering, waiting for more. */
 private val story = listOf(
-    Beat(1.8f, VoiceState.IDLE, "Esperando"),
-    Beat(3.4f, VoiceState.LISTENING, "Escuchando") { t -> 0.35f + 0.45f * abs(sin(t * 7f)) * abs(sin(t * 2.3f)) },
-    Beat(4.6f, VoiceState.THINKING, "Pensando"),
-    Beat(6.2f, VoiceState.SPEAKING, "Hablando") { t -> abs(sin(t * 11f)) * (0.5f + 0.5f * abs(sin(t * 3.1f))) },
-    Beat(7.1f, VoiceState.EXECUTING, "Hecho"),
+    Beat(1.5f, VoiceState.IDLE, "Esperando"),
+    Beat(2.3f, VoiceState.ACTIVATED, "¡Dime!"),
+    Beat(3.9f, VoiceState.LISTENING, "Escuchando") { t -> 0.35f + 0.45f * abs(sin(t * 7f)) * abs(sin(t * 2.3f)) },
+    Beat(4.5f, VoiceState.TRANSCRIBING, "Entendiendo"),
+    Beat(5.6f, VoiceState.THINKING, "Pensando"),
+    Beat(6.3f, VoiceState.EXECUTING, "Hecho"),
+    Beat(8.2f, VoiceState.SPEAKING, "Hablando") { t -> abs(sin(t * 11f)) * (0.5f + 0.5f * abs(sin(t * 3.1f))) },
     Beat(STORY_S, VoiceState.FOLLOW_UP, "¿Algo más?"),
 )
 

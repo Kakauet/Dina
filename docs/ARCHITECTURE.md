@@ -146,9 +146,17 @@ El personaje (`ui/character/`) se dibuja solo con `Canvas` y `Path`:
 
 - `Sketch.kt`: ruido determinista, splines Catmull-Rom y trazos de pincel de grosor
   variable. También la textura de papel: grano y sombreado a lápiz.
-- `Pose.kt`: una pose son unos 20 números (ojos, boca, cejas, inclinación, hojas…).
-  `choreograph` decide la pose de cada `VoiceState` según el reloj y el nivel de audio.
-  Al cambiar de estado se interpola desde la última pose dibujada.
+- `Drawing.kt`: relleno riso (desfase de impresión, volumen con la forma desplazada hacia la luz,
+  sombreado a lápiz y grano), la cara (ojos con degradado, cejas, boca con vocales) y los extras
+  (burbujas, chispas, confeti, notas, gota, zetas, ondas de sonido). Los degradados se crean una vez
+  por tamaño y colores, alrededor del origen, así que un fotograma no crea shaders.
+- `Pose.kt`: una pose son unos 40 números (ojos, boca, cejas, inclinación, hojas, brazos…).
+  `choreograph` decide la pose de cada `VoiceState` según el reloj y el nivel de audio, con una
+  rutina en reposo. Al cambiar de estado se interpola desde la última pose dibujada; después
+  `Accents` suma los gestos de una vez (saltos, temblor, confeti, parpadeo), que acaban aunque el
+  estado cambie.
+- `Secondary.kt`: muelles amortiguados que hacen que hojas, brote y brazos sigan al cuerpo con
+  retraso al saltar o girar.
 - `Rigs.kt`: los dos diseños. Cada uno precalcula sus trazos fijos para un tamaño,
   uno por cada dibujo del «line boil» (3 dibujos a 10 fps).
 - `DinaCharacter.kt`: el composable. El reloj y el nivel de audio solo se leen en la fase
@@ -170,7 +178,8 @@ figura y versión monocroma para los iconos temáticos) con el mismo código y l
 nativos, SDK 34 porque los SDK 35+ necesitan JDK 21) y Roborazzi. Genera en `screenshots/`:
 
 - láminas y PNG por estado de cada personaje;
-- un GIF de un turno completo;
+- un GIF de un turno completo y tiras de fotogramas (PNG en rejilla) del turno y de medio minuto
+  en reposo, para revisar la animación sin visor de GIF;
 - todas las pantallas en claro y oscuro, con datos de ejemplo.
 
 `.\dev.ps1 test` las excluye para seguir siendo rápido.

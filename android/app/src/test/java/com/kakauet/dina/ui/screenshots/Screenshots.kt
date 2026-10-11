@@ -63,6 +63,50 @@ fun AndroidComposeTestRule<*, out ComponentActivity>.gif(group: String, name: St
     file.writeBytes(GifEncoder.encode(captures, width, height, delayCs = 100 / fps))
 }
 
+/**
+ * Writes `<group>/<name>.png`: a grid of [columns] frames of the content already set, captured at
+ * [times] (ascending, s). The clock moves in steps of [stepS] through [advance] and every step is
+ * drawn, so blends and springs run as they do live.
+ */
+fun AndroidComposeTestRule<*, out ComponentActivity>.filmstrip(
+    group: String,
+    name: String,
+    times: List<Float>,
+    columns: Int,
+    stepS: Float = 1f / 30f,
+    advance: (Float) -> Unit,
+) {
+    val view = activity.findViewById<ViewGroup>(android.R.id.content).getChildAt(0)
+    var scratch: Bitmap? = null
+    fun draw(t: Float): Bitmap {
+        advance(t)
+        waitForIdle()
+        val full = scratch?.takeIf { it.width == view.width && it.height == view.height }
+            ?: Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888).also { scratch = it }
+        full.eraseColor(0)
+        view.draw(Canvas(full))
+        return full
+    }
+    val frames = ArrayList<Bitmap>()
+    var t = 0f
+    for (target in times) {
+        while (t + stepS < target) { t += stepS; draw(t) }
+        t = target
+        val full = draw(t)
+        val bounds = onRoot().fetchSemanticsNode().boundsInRoot
+        frames += Bitmap.createBitmap(full, bounds.left.toInt(), bounds.top.toInt(), bounds.width.toInt(), bounds.height.toInt())
+    }
+    val w = frames.first().width
+    val h = frames.first().height
+    val rows = (frames.size + columns - 1) / columns
+    val sheet = Bitmap.createBitmap(w * columns, h * rows, Bitmap.Config.ARGB_8888)
+    sheet.eraseColor(frames.first().getPixel(0, 0))
+    val canvas = Canvas(sheet)
+    frames.forEachIndexed { i, frame -> canvas.drawBitmap(frame, (i % columns * w).toFloat(), (i / columns * h).toFloat(), null) }
+    val file = File(outputDir, "$group/$name.png").also { it.parentFile?.mkdirs() }
+    file.outputStream().use { sheet.compress(Bitmap.CompressFormat.PNG, 100, it) }
+}
+
 /** Minimal animated GIF89a writer: one shared 256-color palette, LZW, infinite loop. */
 private object GifEncoder {
     fun encode(frames: List<IntArray>, width: Int, height: Int, delayCs: Int): ByteArray {

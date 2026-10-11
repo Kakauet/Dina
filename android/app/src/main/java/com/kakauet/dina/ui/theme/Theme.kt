@@ -50,6 +50,11 @@ data class CharacterColors(
     val spark: Color,
     val sweat: Color,
     val bubble: Color,
+    /** Her eyes fade from [ink] at the top to [iris] at the bottom, where [irisLight] reflects. */
+    val iris: Color,
+    val irisLight: Color,
+    /** Leaf tips, where the light falls. */
+    val leafLight: Color,
 )
 
 val CharacterInk = CharacterColors(
@@ -68,6 +73,9 @@ val CharacterInk = CharacterColors(
     spark = Color(0xFFF4C64A),
     sweat = Color(0xFF9FD7EA),
     bubble = Color(0xFFFFFCF2),
+    iris = Color(0xFF3D6E52),
+    irisLight = Color(0xFF9AD3A6),
+    leafLight = Color(0xFFD4EFB2),
 )
 
 @Immutable

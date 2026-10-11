@@ -2,7 +2,7 @@
 
 Local Spanish voice assistant for Android (Galaxy S24 Ultra). On-device: wake word "Dina",
 STT, a small LLM (llama.cpp) that reads the request, a dialogue engine that acts, Supertonic TTS. No internet.
-Current: app 2.4.1 with Dina 4.5, in two editions from the same code: **Dina** (`full`: Dina 4.5 1.2B Q4_K_M, the S24 Ultra and alike)
+Current: app 2.4.2 with Dina 4.5, in two editions from the same code: **Dina** (`full`: Dina 4.5 1.2B Q4_K_M, the S24 Ultra and alike)
 and **Dina Lite** (`lite`: Dina 4.5 350M Q8_0, applicationId `.lite`, installs next to the other). See `docs/ROADMAP.md` for what comes next.
 The owner (Kakauet) writes in Spanish: answer in Spanish. Code, comments and identifiers in English;
 user-facing strings in Spanish.
@@ -65,7 +65,7 @@ renders Compose on the PC); touch, real animation speed and performance still ne
 | `voice/DinaService.kt` | 355 | Foreground service: lifecycle, model loading, intents API. |
 | `models/ModelInstaller.kt` | 180 | Models from APK assets (release, copied to `files/models/`; unused ones deleted) or external storage (debug). |
 | `ui/theme/Theme.kt` | 380 | Design tokens: light/dark palettes, character colors, fonts, spacing, sizes, shapes, durations and springs. Start any visual change here; screens hardcode no dp, color or duration. |
-| `ui/character/` | 1315 | Dina as a hand-drawn character (Canvas only): brush/boil primitives, poses per `VoiceState`, Brote and Musgo designs. |
+| `ui/character/` | 2220 | Dina as a hand-drawn character (Canvas only): brush/boil primitives, shaded riso fills and face (`Drawing`), poses per `VoiceState` with an idle routine and one-shot accents (`Pose`), spring follow-through (`Secondary`), Brote and Musgo designs (`Rigs`). |
 | `ui/components/` | 940 | Hand-drawn cards, buttons, bubbles, icons, progress ring, micro-animations. |
 | `ui/widgets`, `ui/screens` | 1340 | Tool cards and screens (Inicio voz/texto, Mis cosas, Ajustes, Diagnóstico). |
 | `cpp/dina_llm_jni.cpp` | 315 | llama.cpp JNI (tokens reach Java as whole UTF-8 characters). |

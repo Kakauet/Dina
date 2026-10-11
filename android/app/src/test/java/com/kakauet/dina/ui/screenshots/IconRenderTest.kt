@@ -136,6 +136,7 @@ private val MonoInk = CharacterInk.copy(
     bodyLight = Color.Transparent, leaf = Color.Transparent, leafShade = Color.Transparent, belly = Color.Transparent,
     cheek = Color.Transparent, mouth = Color.Black, tongue = Color.Transparent, shine = Color.Transparent,
     spark = Color.Transparent, sweat = Color.Transparent, bubble = Color.Transparent,
+    iris = Color.Black, irisLight = Color.Transparent, leafLight = Color.Transparent,
 )
 
 @Composable

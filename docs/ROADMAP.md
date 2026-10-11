@@ -1,9 +1,17 @@
 # Hoja de ruta
 
-**Versión actual: app 2.4.1 con Dina 4.5** (octubre de 2026), en dos ediciones: Dina (1.2B: RW2 v2.0 86,1 %,
+**Versión actual: app 2.4.2 con Dina 4.5** (octubre de 2026), en dos ediciones: Dina (1.2B: RW2 v2.0 86,1 %,
 conversiones 95,3 %, Dina-Real 85,0 %) y Dina Lite (350M: 79,9 % y 79 %), las dos con 0 afirmaciones falsas.
 La 2.4 habla antes y sin huecos (voz recortada, guía solo en los primeros pasos, caché de audio); la 2.4.1
-corrige la carga de modelos y pule la interfaz. Lo hecho hasta aquí está en [HISTORY.md](HISTORY.md).
+corrige la carga de modelos y pule la interfaz; la 2.4.2 redibuja los personajes y sus animaciones. Lo hecho
+hasta aquí está en [HISTORY.md](HISTORY.md).
+
+## Pendiente de la 2.4.2
+
+En el móvil: que el personaje vaya fluido a 60 fps en el S24 y en un móvil modesto con Dina Lite (hay más
+recortes por fotograma: volumen de hojas, brazos y cuerpo); la velocidad real del salto, el temblor del error y
+los muelles de las hojas; que con «quitar animaciones» se quede quieta; el icono temático (monocromo) en el
+lanzador; y si la rutina de reposo (mirar, tararear, botar, estirarse cada ~7 s) resulta viva o cansa.
 
 ## Pendiente de la 2.4.1
 

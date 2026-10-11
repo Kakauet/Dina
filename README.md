@@ -207,7 +207,7 @@ APK de release con modelos (colocados en `models/` según [models/README.md](mod
 
 ```powershell
 .\dev.ps1 keystore               # una vez: clave de firma en %USERPROFILE%\.dina\
-.\dev.ps1 apk                    # -> dist\Dina-2.4.1.apk y dist\Dina-Lite-2.4.1.apk
+.\dev.ps1 apk                    # -> dist\Dina-2.4.2.apk y dist\Dina-Lite-2.4.2.apk
 ```
 
 Las actualizaciones deben firmarse con la misma clave: guarda una copia de `%USERPROFILE%\.dina\`.
@@ -245,7 +245,7 @@ condiciones**: ver [THIRD_PARTY.md](THIRD_PARTY.md).
 
 ## Estado
 
-Versión 2.4.1 (octubre de 2026). Pendiente: interrupciones, multiacción, números en palabras y
+Versión 2.4.2 (octubre de 2026). Pendiente: interrupciones, multiacción, números en palabras y
 peticiones imposibles parecidas a las posibles; ver [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Licencia

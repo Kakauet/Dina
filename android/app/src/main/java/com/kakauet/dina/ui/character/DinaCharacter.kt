@@ -11,7 +11,6 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -103,12 +102,17 @@ fun DinaCharacter(
     )
 }
 
-/** Keeps the poses between frames and blends from the last drawn pose when the state changes. */
+/**
+ * Keeps the poses between frames and blends from the last drawn pose when the state changes.
+ * On top of the blend come the one-shot [Accents] and the [Secondary] follow-through.
+ */
 internal class CharacterRenderer(private val rig: Rig) {
     private val frame = Frame(Sketcher())
     private val from = Pose()
     private val target = Pose()
     private val pose = Pose()
+    private val accents = Accents()
+    private val secondary = Secondary()
     private var state: VoiceState? = null
     private var enteredAt = 0f
     private var blending = false
@@ -127,6 +131,7 @@ internal class CharacterRenderer(private val rig: Rig) {
         from.set(pose)
         state = next
         enteredAt = if (first) 0f else now
+        accents.start(next, enteredAt, transition = blending)
     }
 
     /** Builds textures and the rig's static paths once per canvas size. */
@@ -147,23 +152,29 @@ internal class CharacterRenderer(private val rig: Rig) {
 
         val since = time - enteredAt
         // The first frame starts at the live level, so a still frame (screenshots) shows it.
-        if (lastTime < 0f || !motion) heard.reset(level.coerceIn(0f, 1f)) else heard.next(level, time - lastTime)
+        val first = lastTime < 0f || !motion
+        if (first) heard.reset(level.coerceIn(0f, 1f)) else heard.next(level, time - lastTime)
+        val dt = time - lastTime
         lastTime = time
         choreograph(current, time, since, heard.value, motion, target, greeting)
         pose.blend(from, target, if (blending) settle(since / blendS) else 1f)
+        accents.apply(time, motion, pose)
+        // Leaves, sprout and arms trail behind her jumps and turns.
+        if (first) secondary.reset(pose.hop, pose.tilt, pose.shiftX) else secondary.step(dt, pose.hop, pose.tilt, pose.shiftX)
+        pose.flop = if (motion) secondary.flop else 0f
+        pose.sway = if (motion) secondary.sway else 0f
 
         val side = f.side
-        // Soft ground shadow, outside the body transform so it stays on the floor.
-        val shadow = 1f - pose.hop * 5f
-        drawOval(
-            colors.ink.copy(alpha = 0.1f),
-            Offset(side * (0.5f - 0.2f * shadow), side * (GROUND - 0.022f)),
-            Size(side * 0.4f * shadow, side * 0.044f),
-        )
+        // Soft ground shadow, outside the body transform so it stays on the floor; it shrinks as she jumps.
+        f.gradients(side * rig.faceScale)
+        val shadow = (1f - pose.hop * 6f).coerceAtLeast(0.4f)
+        around(side * (0.5f + pose.shiftX), side * (GROUND - 0.002f), side * 0.23f * shadow, side * 0.034f) {
+            drawCircle(f.shadowFill, 1f, Offset.Zero, alpha = 0.6f + 0.4f * shadow)
+        }
         val pivot = Offset(side * 0.5f, side * GROUND)
         val grow = 1f + 0.045f * pose.lean
         withTransform({
-            translate(0f, -side * pose.hop)
+            translate(side * pose.shiftX, -side * pose.hop)
             rotate(pose.tilt, pivot)
             scale((1f + pose.squash) * grow, (1f - pose.squash) * grow, pivot)
         }) {
